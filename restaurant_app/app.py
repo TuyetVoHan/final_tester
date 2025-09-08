@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import os
 from datetime import datetime
+import re
 
 DB_PATH = "restaurant_reservation.db"
 
@@ -176,15 +177,47 @@ def login_required(role=None):
 def index():
     return render_template('index.html')
 
+
 # Register (customer)
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
         full_name = request.form.get('full_name', '')
         email = request.form['email'].strip()
-        phone = request.form.get('phone', '')
+        phone = request.form.get('phone', '').strip()
+
+        # --- BẮT ĐẦU VALIDATION ---
+        error = False
+        if len(username) < 4:
+            flash('Username must be at least 4 characters long.', 'danger')
+            error = True
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'danger')
+            error = True
+        if password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            error = True
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash('Invalid email address.', 'danger')
+            error = True
+        
+        # --- THÊM VALIDATE CHO SỐ ĐIỆN THOẠI ---
+        if phone and not re.match(r"^\d{10}$", phone):
+            flash('Invalid phone number. It must be 10 digits.', 'danger')
+            error = True
+        # --- KẾT THÚC VALIDATE SỐ ĐIỆN THOẠI ---
+
+        if error:
+            # Nếu có lỗi, render lại trang register và giữ lại dữ liệu người dùng đã nhập
+            return render_template('register.html',
+                                   username=username,
+                                   full_name=full_name,
+                                   email=email,
+                                   phone=phone)
+        # --- KẾT THÚC VALIDATION ---
 
         db = get_db()
         try:
@@ -244,14 +277,34 @@ def logout():
 def profile():
     db = get_db()
     uid = session['user']
+
     if request.method == 'POST':
         full = request.form.get('full_name', '')
-        email = request.form.get('email', '')
-        phone = request.form.get('phone', '')
-        db.execute("UPDATE Customers SET full_name = ?, email = ?, phone = ? WHERE customer_id = ?;",
-                   (full, email, phone, uid))
-        db.commit()
-        flash('Profile updated.', 'success')
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        # --- BẮT ĐẦU VALIDATION ---
+        error = False
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash('Invalid email address.', 'danger')
+            error = True
+        
+        if phone and not re.match(r"^\d{10}$", phone):
+            flash('Invalid phone number. It must be 10 digits.', 'danger')
+            error = True
+        
+        if not error:
+            # Chỉ cập nhật DB nếu không có lỗi
+            try:
+                db.execute("UPDATE Customers SET full_name = ?, email = ?, phone = ? WHERE customer_id = ?;",
+                           (full, email, phone, uid))
+                db.commit()
+                flash('Profile updated.', 'success')
+            except sqlite3.IntegrityError:
+                flash('Email already in use by another account.', 'danger')
+        # --- KẾT THÚC VALIDATION ---
+
+    # Lấy thông tin người dùng để hiển thị
     cur = db.execute("SELECT * FROM Customers WHERE customer_id = ?;", (uid,))
     user = cur.fetchone()
     return render_template('profile.html', user=user)

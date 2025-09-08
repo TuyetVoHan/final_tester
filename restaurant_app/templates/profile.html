@@ -1,14 +1,48 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2 class="title">Profile</h2>
 <form method="post">
-  <div class="field"><label class="label">Full name</label>
-    <div class="control"><input class="input" name="full_name" value="{{ user['full_name'] }}"></div></div>
-  <div class="field"><label class="label">Email</label>
-    <div class="control"><input class="input" name="email" value="{{ user['email'] }}"></div></div>
-  <div class="field"><label class="label">Phone</label>
-    <div class="control"><input class="input" name="phone" value="{{ user['phone'] }}"></div></div>
-  <div class="control"><button class="button is-primary">Update</button>
-    <a class="button is-light" href="{{ url_for('change_password') }}">Change password</a></div>
+  <div class="field">
+    <label class="label">Full name</label>
+    <div class="control">
+      <input class="input" name="full_name" value="{{ user['full_name'] }}" />
+    </div>
+  </div>
+
+  {# CẬP NHẬT TRƯỜNG EMAIL #}
+  <div class="field">
+    <label class="label">Email</label>
+    <div class="control">
+      <input
+        class="input"
+        type="email"
+        name="email"
+        value="{{ user['email'] }}"
+        required
+      />
+    </div>
+  </div>
+
+  {# CẬP NHẬT TRƯỜNG SỐ ĐIỆN THOẠI #}
+  <div class="field">
+    <label class="label">Phone</label>
+    <div class="control">
+      <input
+        class="input"
+        type="tel"
+        name="phone"
+        value="{{ user['phone'] }}"
+        pattern="[0-9]{10}"
+        title="Phone number must be 10 digits."
+      />
+    </div>
+    <p class="help">10 digits.</p>
+  </div>
+
+  <div class="control">
+    <button class="button is-primary">Update</button>
+    <a class="button is-light" href="{{ url_for('change_password') }}"
+      >Change password</a
+    >
+  </div>
 </form>
 {% endblock %}

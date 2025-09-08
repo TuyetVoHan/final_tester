@@ -1,17 +1,84 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2 class="title">Register (Customer)</h2>
 <form method="post">
-  <div class="field"><label class="label">Username</label>
-    <div class="control"><input class="input" name="username" required></div></div>
-  <div class="field"><label class="label">Password</label>
-    <div class="control"><input class="input" type="password" name="password" required></div></div>
-  <div class="field"><label class="label">Full name</label>
-    <div class="control"><input class="input" name="full_name"></div></div>
-  <div class="field"><label class="label">Email</label>
-    <div class="control"><input class="input" name="email" required></div></div>
-  <div class="field"><label class="label">Phone</label>
-    <div class="control"><input class="input" name="phone"></div></div>
+  <div class="field">
+    <label class="label">Username</label>
+    <div class="control">
+      <input
+        class="input"
+        name="username"
+        required
+        minlength="4"
+        value="{{ username or '' }}"
+      />
+    </div>
+    <p class="help">At least 4 characters.</p>
+  </div>
+
+  <div class="field">
+    <label class="label">Password</label>
+    <div class="control">
+      <input
+        class="input"
+        type="password"
+        name="password"
+        required
+        minlength="8"
+      />
+    </div>
+    <p class="help">At least 8 characters.</p>
+  </div>
+
+  <div class="field">
+    <label class="label">Confirm Password</label>
+    <div class="control">
+      <input
+        class="input"
+        type="password"
+        name="confirm_password"
+        required
+        minlength="8"
+      />
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Full name</label>
+    <div class="control">
+      <input class="input" name="full_name" value="{{ full_name or '' }}" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Email</label>
+    <div class="control">
+      <input
+        class="input"
+        type="email"
+        name="email"
+        required
+        value="{{ email or '' }}"
+      />
+    </div>
+  </div>
+
+  {# --- CẬP NHẬT TRƯỜNG NHẬP SỐ ĐIỆN THOẠI --- #}
+  <div class="field">
+    <label class="label">Phone</label>
+    <div class="control">
+      <input
+        class="input"
+        type="tel"
+        name="phone"
+        value="{{ phone or '' }}"
+        pattern="[0-9]{10}"
+        title="Phone number must be 10 digits."
+      />
+    </div>
+    <p class="help">10 digits.</p>
+  </div>
+  {# --- KẾT THÚC CẬP NHẬT --- #}
+
   <div class="control"><button class="button is-primary">Register</button></div>
 </form>
 {% endblock %}

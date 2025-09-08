@@ -1,19 +1,32 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2 class="title">Restaurants (Admin)</h2>
-<p><a class="button is-primary" href="{{ url_for('admin_restaurant_form') }}">Add new restaurant</a></p>
+<p>
+  <a class="button is-primary" href="{{ url_for('admin_restaurant_form') }}"
+    >Add new restaurant</a
+  >
+</p>
 {% for r in restaurants %}
-  <div class="box">
-    <h3 class="title is-5">{{ r['name'] }} <small>{{ r['rating'] }}</small></h3>
-    <p>{{ r['cuisine'] }} — {{ r['location'] }}</p>
-    <div class="buttons">
-      <a class="button is-small" href="{{ url_for('admin_restaurant_form', rid=r['restaurant_id']) }}">Edit</a>
-      <form style="display:inline" method="post" action="{{ url_for('admin_restaurant_delete', rid=r['restaurant_id']) }}">
-        <button class="button is-small is-danger">Delete</button>
-      </form>
-    </div>
+<div class="box">
+  <h3 class="title is-5">{{ r['name'] }} <small>{{ r['rating'] }}</small></h3>
+  <p>{{ r['cuisine'] }} — {{ r['location'] }}</p>
+  <div class="buttons">
+    <a
+      class="button is-small"
+      href="{{ url_for('admin_restaurant_form', rid=r['restaurant_id']) }}"
+      >Edit</a
+    >
+    {# THAY ĐỔI BẮT ĐẦU TỪ ĐÂY #}
+    <form
+      style="display: inline"
+      method="post"
+      action="{{ url_for('admin_restaurant_delete', rid=r['restaurant_id']) }}"
+      onsubmit="return confirm('Are you sure you want to delete this restaurant?');"
+    >
+      <button class="button is-small is-danger">Delete</button>
+    </form>
+    {# KẾT THÚC THAY ĐỔI #}
   </div>
+</div>
 {% else %}
-  <p>No restaurants.</p>
-{% endfor %}
-{% endblock %}
+<p>No restaurants.</p>
+{% endfor %} {% endblock %}
