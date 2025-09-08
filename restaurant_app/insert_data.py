@@ -1,7 +1,7 @@
 import sqlite3
 
 def insert_restaurants():
-    conn = sqlite3.connect("restaurant_reservation.db")
+    conn = sqlite3.connect("restaurant_app/restaurant_reservation.db")
     cursor = conn.cursor()
 
     restaurants = [
