@@ -607,13 +607,69 @@ def admin_update_reservation(res_id):
     flash('Reservation status updated.', 'success')
     return redirect(url_for('admin_reservations'))
 
-# Admin: manage users (simple listing)
+# # Admin: manage users (simple listing)
+# @app.route('/admin/users')
+# @login_required(role='admin')
+# def admin_users():
+#     db = get_db()
+#     users = db.execute("SELECT * FROM Customers ORDER BY created_at DESC").fetchall()
+#     return render_template('admin_restaurants.html', restaurants=[], users=users)  # reuse simple template or create new one
+
+# -----------------------
+# Admin: Manage Users
+# -----------------------
 @app.route('/admin/users')
 @login_required(role='admin')
-def admin_users():
+def admin_manage_users():
     db = get_db()
-    users = db.execute("SELECT * FROM Customers ORDER BY created_at DESC").fetchall()
-    return render_template('admin_restaurants.html', restaurants=[], users=users)  # reuse simple template or create new one
+    users = db.execute("SELECT * FROM Customers ORDER BY username ASC").fetchall()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/user/<int:uid>/edit', methods=['GET', 'POST'])
+@login_required(role='admin')
+def admin_edit_user(uid):
+    db = get_db()
+    if request.method == 'POST':
+        full_name = request.form.get('full_name', '')
+        email = request.form.get('email', '').strip()
+        phone = request.form.get('phone', '').strip()
+
+        # Validation
+        error = False
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash('Invalid email address.', 'danger')
+            error = True
+        if phone and not re.match(r"^\d{10}$", phone):
+            flash('Invalid phone number. It must be 10 digits.', 'danger')
+            error = True
+        
+        if not error:
+            try:
+                db.execute("UPDATE Customers SET full_name = ?, email = ?, phone = ? WHERE customer_id = ?",
+                           (full_name, email, phone, uid))
+                db.commit()
+                flash('User profile updated successfully.', 'success')
+                return redirect(url_for('admin_manage_users'))
+            except sqlite3.IntegrityError:
+                flash('That email is already in use by another account.', 'danger')
+
+    # For GET request or if there was an error
+    user = db.execute("SELECT * FROM Customers WHERE customer_id = ?", (uid,)).fetchone()
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin_manage_users'))
+    return render_template('admin_edit_user.html', user=user)
+
+@app.route('/admin/user/<int:uid>/delete', methods=['POST'])
+@login_required(role='admin')
+def admin_delete_user(uid):
+    db = get_db()
+    # Optional: Check if the user is not deleting themselves, although admin accounts are separate.
+    # This is a good practice.
+    db.execute("DELETE FROM Customers WHERE customer_id = ?", (uid,))
+    db.commit()
+    flash('User account has been deleted.', 'info')
+    return redirect(url_for('admin_manage_users'))
 
 # -----------------------
 # Run app

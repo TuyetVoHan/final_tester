@@ -1,8 +1,15 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2 class="title">Admin Dashboard</h2>
 <p>
-  <a class="button is-link" href="{{ url_for('admin_restaurants') }}">Manage Restaurants</a>
-  <a class="button is-link" href="{{ url_for('admin_reservations') }}">Manage Reservations</a>
+  <a class="button is-link" href="{{ url_for('admin_restaurants') }}"
+    >Manage Restaurants</a
+  >
+  <a class="button is-link" href="{{ url_for('admin_reservations') }}"
+    >Manage Reservations</a
+  >
+  {# SỬA DÒNG DƯỚI ĐÂY #}
+  <a class="button is-link" href="{{ url_for('admin_manage_users') }}"
+    >Manage Users</a
+  >
 </p>
 {% endblock %}
