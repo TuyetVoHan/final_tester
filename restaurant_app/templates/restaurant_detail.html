@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="title">{{ restaurant['name'] }}</h2>
+<p>{{ restaurant['cuisine'] }} — {{ restaurant.get('location','') }}</p>
+<p>{{ restaurant.get('description','') }}</p>
+
+{% if reservation and edit_mode %}
+  <h3 class="subtitle">Edit reservation #{{ reservation['reservation_id'] }}</h3>
+  <form method="post">
+    <div class="field"><label>Date</label><input class="input" type="date" name="date" value="{{ reservation['reservation_date'] }}" required></div>
+    <div class="field"><label>Time</label><input class="input" type="time" name="time" value="{{ reservation['reservation_time'] }}" required></div>
+    <div class="field"><label>Guests</label><input class="input" type="number" name="guests" value="{{ reservation['guests'] }}" min="1" required></div>
+    <div class="control"><button class="button is-primary">Update</button>
+      <button class="button is-danger" name="action" value="cancel" formmethod="post">Cancel Reservation</button>
+    </div>
+  </form>
+{% else %}
+  <h3 class="subtitle">Make a reservation</h3>
+  <form method="post">
+    <div class="field"><label>Date</label><input class="input" type="date" name="date" required></div>
+    <div class="field"><label>Time</label><input class="input" type="time" name="time" required></div>
+    <div class="field"><label>Guests</label><input class="input" type="number" name="guests" min="1" required></div>
+    <div class="field"><label>Select table (optional)</label>
+      <div class="control">
+        <div class="select">
+          <select name="table_id">
+            <option value="">Auto-assign best table</option>
+            {% for t in tables %}
+              <option value="{{ t['table_id'] }}">{{ t['table_number'] }} (capacity {{ t['capacity'] }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="control"><button class="button is-primary">Reserve</button></div>
+  </form>
+{% endif %}
+{% endblock %}
