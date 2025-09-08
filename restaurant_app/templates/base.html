@@ -20,20 +20,26 @@
           >
         </div>
         <div class="navbar-end">
-          {% if session.get('role') == 'admin' %}
-          <a class="navbar-item" href="{{ url_for('admin_dashboard') }}"
-            >Admin</a
-          >
-          {% endif %} {% if session.get('user') %}
+          {% if session.get('user') %} {# Hiển thị các liên kết chung cho người
+          dùng đã đăng nhập #}
           <a class="navbar-item" href="{{ url_for('profile') }}"
             >{{ session.get('name') }}</a
           >
+
+          {% if session.get('role') == 'customer' %} {# Chỉ hiển thị liên kết
+          này cho Customer #}
           <a class="navbar-item" href="{{ url_for('bookings') }}"
             >My Bookings</a
           >
-          {# DÒNG MỚI #}
+          {% elif session.get('role') == 'admin' %} {# Chỉ hiển thị liên kết này
+          cho Admin #}
+          <a class="navbar-item" href="{{ url_for('admin_dashboard') }}"
+            >Admin</a
+          >
+          {% endif %}
+
           <a class="navbar-item" href="{{ url_for('logout') }}">Logout</a>
-          {% else %}
+          {% else %} {# Hiển thị cho người dùng chưa đăng nhập #}
           <a class="navbar-item" href="{{ url_for('login') }}">Login</a>
           <a class="navbar-item" href="{{ url_for('register') }}">Register</a>
           {% endif %}
