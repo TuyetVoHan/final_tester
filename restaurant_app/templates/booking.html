@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="title">Your bookings</h2>
+{% for b in bookings %}
+  <div class="box">
+    <p><strong>#{{ b['reservation_id'] }}</strong> — {{ b['restaurant_name'] }} | {{ b['reservation_date'] }} {{ b['reservation_time'] }} | {{ b['guests'] }} guests | <em>{{ b['status'] }}</em></p>
+    <div class="buttons">
+      <a class="button is-small is-info" href="{{ url_for('edit_reservation', res_id=b['reservation_id']) }}">Edit</a>
+    </div>
+  </div>
+{% else %}
+  <p>No bookings yet.</p>
+{% endfor %}
+{% endblock %}
