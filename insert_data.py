@@ -33,3 +33,4 @@ def insert_restaurants():
 
 if __name__ == "__main__":
     insert_restaurants()
+#test
