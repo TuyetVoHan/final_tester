@@ -609,11 +609,11 @@ def admin_delete_user(uid):
     return redirect(url_for('admin_manage_users'))
 
 
-@app.route('/init-db')
-def init_db_command():
-    """Tạo các bảng CSDL và chèn dữ liệu mẫu."""
-    db = get_db()
-    cur = db.cursor()
+# @app.route('/init-db')
+# def init_db_command():
+#     """Tạo các bảng CSDL và chèn dữ liệu mẫu."""
+#     db = get_db()
+#     cur = db.cursor()
 
 #     # --- TẠO BẢNG ---
 #     # Chạy các lệnh CREATE TABLE từ file create_db.py, đã sửa cho PostgreSQL
@@ -721,11 +721,11 @@ def init_db_command():
 #         print("ℹ️ Dữ liệu nhà hàng mẫu đã tồn tại.")
 
 
-    db.commit()
-    cur.close()
+    # db.commit()
+    # cur.close()
     
-    flash("Database initialized successfully!", "success")
-    return redirect(url_for('index'))
+    # flash("Database initialized successfully!", "success")
+    # return redirect(url_for('index'))
 # -----------------------
 # Run app
 # -----------------------
