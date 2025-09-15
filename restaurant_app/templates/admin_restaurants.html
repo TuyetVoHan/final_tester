@@ -15,7 +15,11 @@
       href="{{ url_for('admin_restaurant_form', rid=r['restaurant_id']) }}"
       >Edit</a
     >
-    {# THAY ĐỔI BẮT ĐẦU TỪ ĐÂY #}
+    <a
+      class="button is-small is-link"
+      href="{{ url_for('admin_manage_tables', rid=r['restaurant_id']) }}"
+      >Manage Tables</a
+    >
     <form
       style="display: inline"
       method="post"
@@ -24,7 +28,6 @@
     >
       <button class="button is-small is-danger">Delete</button>
     </form>
-    {# KẾT THÚC THAY ĐỔI #}
   </div>
 </div>
 {% else %}

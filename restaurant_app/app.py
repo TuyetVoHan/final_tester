@@ -457,6 +457,67 @@ def admin_restaurant_delete(rid):
     flash('Restaurant deleted.', 'info')
     return redirect(url_for('admin_restaurants'))
 
+@app.route('/admin/restaurant/<int:rid>/tables', methods=['GET', 'POST'])
+@login_required(role='admin')
+def admin_manage_tables(rid):
+    db = get_db()
+    cur = db.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # Lấy thông tin nhà hàng để hiển thị tên
+    cur.execute("SELECT * FROM Restaurants WHERE restaurant_id = %s", (rid,))
+    restaurant = cur.fetchone()
+    if not restaurant:
+        flash('Restaurant not found.', 'danger')
+        return redirect(url_for('admin_restaurants'))
+
+    if request.method == 'POST':
+        # Xử lý việc thêm bàn mới
+        table_number = request.form.get('table_number')
+        capacity = request.form.get('capacity')
+
+        if not table_number or not capacity:
+            flash('Table number and capacity are required.', 'danger')
+        else:
+            try:
+                cur.execute("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (%s, %s, %s)",
+                            (rid, table_number, int(capacity)))
+                db.commit()
+                flash(f"Table '{table_number}' added successfully.", 'success')
+            except ValueError:
+                flash('Capacity must be a number.', 'danger')
+            except psycopg2.Error as e:
+                db.rollback()
+                flash(f'Error adding table: {e}', 'danger')
+        
+        return redirect(url_for('admin_manage_tables', rid=rid))
+
+    # Lấy danh sách các bàn hiện có của nhà hàng
+    cur.execute("SELECT * FROM Tables WHERE restaurant_id = %s ORDER BY table_number", (rid,))
+    tables = cur.fetchall()
+    cur.close()
+
+    # Chúng ta sẽ tạo tệp HTML này ở bước tiếp theo
+    return render_template('admin_manage_tables.html', restaurant=restaurant, tables=tables)
+
+
+# Admin: Xóa một bàn
+@app.route('/admin/restaurant/<int:rid>/table/<int:table_id>/delete', methods=['POST'])
+@login_required(role='admin')
+def admin_delete_table(rid, table_id):
+    db = get_db()
+    cur = db.cursor()
+    try:
+        cur.execute("DELETE FROM Tables WHERE table_id = %s AND restaurant_id = %s", (table_id, rid))
+        db.commit()
+        flash('Table deleted successfully.', 'info')
+    except psycopg2.Error as e:
+        db.rollback()
+        flash(f'Error deleting table: {e}', 'danger')
+    finally:
+        cur.close()
+    
+    return redirect(url_for('admin_manage_tables', rid=rid))
+
 # Admin: manage reservations
 @app.route('/admin/reservations')
 @login_required(role='admin')
@@ -554,110 +615,111 @@ def init_db_command():
     db = get_db()
     cur = db.cursor()
 
-    # --- TẠO BẢNG ---
-    # Chạy các lệnh CREATE TABLE từ file create_db.py, đã sửa cho PostgreSQL
-    # Customers
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Customers (
-        customer_id   SERIAL PRIMARY KEY,
-        username      TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        full_name     TEXT,
-        email         TEXT UNIQUE NOT NULL,
-        phone         TEXT,
-        created_at    DATE DEFAULT CURRENT_DATE
-    );
-    """)
+#     # --- TẠO BẢNG ---
+#     # Chạy các lệnh CREATE TABLE từ file create_db.py, đã sửa cho PostgreSQL
+#     # Customers
+#     cur.execute("""
+#     CREATE TABLE IF NOT EXISTS Customers (
+#         customer_id   SERIAL PRIMARY KEY,
+#         username      TEXT UNIQUE NOT NULL,
+#         password_hash TEXT NOT NULL,
+#         full_name     TEXT,
+#         email         TEXT UNIQUE NOT NULL,
+#         phone         TEXT,
+#         created_at    DATE DEFAULT CURRENT_DATE
+#     );
+#     """)
 
-    # Admins
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Admins (
-        admin_id      SERIAL PRIMARY KEY,
-        adminname     TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        full_name     TEXT,
-        email         TEXT UNIQUE NOT NULL,
-        created_at    DATE DEFAULT CURRENT_DATE
-    );
-    """)
+#     # Admins
+#     cur.execute("""
+#     CREATE TABLE IF NOT EXISTS Admins (
+#         admin_id      SERIAL PRIMARY KEY,
+#         adminname     TEXT UNIQUE NOT NULL,
+#         password_hash TEXT NOT NULL,
+#         full_name     TEXT,
+#         email         TEXT UNIQUE NOT NULL,
+#         created_at    DATE DEFAULT CURRENT_DATE
+#     );
+#     """)
 
-    # Restaurants
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Restaurants (
-        restaurant_id SERIAL PRIMARY KEY,
-        name          TEXT NOT NULL,
-        location      TEXT NOT NULL,
-        cuisine       TEXT,
-        rating        REAL CHECK (rating >= 0 AND rating <= 5),
-        description   TEXT,
-        created_at    DATE DEFAULT CURRENT_DATE
-    );
-    """)
+#     # Restaurants
+#     cur.execute("""
+#     CREATE TABLE IF NOT EXISTS Restaurants (
+#         restaurant_id SERIAL PRIMARY KEY,
+#         name          TEXT NOT NULL,
+#         location      TEXT NOT NULL,
+#         cuisine       TEXT,
+#         rating        REAL CHECK (rating >= 0 AND rating <= 5),
+#         description   TEXT,
+#         created_at    DATE DEFAULT CURRENT_DATE
+#     );
+#     """)
 
-    # Tables
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Tables (
-        table_id      SERIAL PRIMARY KEY,
-        restaurant_id INTEGER NOT NULL REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE,
-        table_number  TEXT,
-        capacity      INTEGER NOT NULL
-    );
-    """)
+#     # Tables
+#     cur.execute("""
+#     CREATE TABLE IF NOT EXISTS Tables (
+#         table_id      SERIAL PRIMARY KEY,
+#         restaurant_id INTEGER NOT NULL REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE,
+#         table_number  TEXT,
+#         capacity      INTEGER NOT NULL
+#     );
+#     """)
 
-    # Reservations
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS Reservations (
-        reservation_id  SERIAL PRIMARY KEY,
-        customer_id     INTEGER NOT NULL REFERENCES Customers(customer_id) ON DELETE CASCADE,
-        restaurant_id   INTEGER NOT NULL REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE,
-        table_id        INTEGER REFERENCES Tables(table_id) ON DELETE SET NULL,
-        reservation_date DATE NOT NULL,
-        reservation_time TEXT NOT NULL,
-        guests          INTEGER NOT NULL CHECK (guests > 0),
-        status          TEXT CHECK (status IN ('pending', 'confirmed', 'rejected', 'completed', 'cancelled')) DEFAULT 'pending',
-        created_at      DATE DEFAULT CURRENT_DATE
-    );
-    """)
+#     # Reservations
+#     cur.execute("""
+#     CREATE TABLE IF NOT EXISTS Reservations (
+#         reservation_id  SERIAL PRIMARY KEY,
+#         customer_id     INTEGER NOT NULL REFERENCES Customers(customer_id) ON DELETE CASCADE,
+#         restaurant_id   INTEGER NOT NULL REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE,
+#         table_id        INTEGER REFERENCES Tables(table_id) ON DELETE SET NULL,
+#         reservation_date DATE NOT NULL,
+#         reservation_time TEXT NOT NULL,
+#         guests          INTEGER NOT NULL CHECK (guests > 0),
+#         status          TEXT CHECK (status IN ('pending', 'confirmed', 'rejected', 'completed', 'cancelled')) DEFAULT 'pending',
+#         created_at      DATE DEFAULT CURRENT_DATE
+#     );
+#     """)
     
-    # ReservationHistory
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS ReservationHistory (
-        history_id     SERIAL PRIMARY KEY,
-        reservation_id INTEGER NOT NULL REFERENCES Reservations(reservation_id) ON DELETE CASCADE,
-        action         TEXT NOT NULL,
-        action_by_admin INTEGER REFERENCES Admins(admin_id) ON DELETE SET NULL,
-        action_by_customer INTEGER REFERENCES Customers(customer_id) ON DELETE SET NULL,
-        action_time    DATE DEFAULT CURRENT_DATE,
-        note           TEXT
-    );
-    """)
+#     # ReservationHistory
+#     cur.execute("""
+#     CREATE TABLE IF NOT EXISTS ReservationHistory (
+#         history_id     SERIAL PRIMARY KEY,
+#         reservation_id INTEGER NOT NULL REFERENCES Reservations(reservation_id) ON DELETE CASCADE,
+#         action         TEXT NOT NULL,
+#         action_by_admin INTEGER REFERENCES Admins(admin_id) ON DELETE SET NULL,
+#         action_by_customer INTEGER REFERENCES Customers(customer_id) ON DELETE SET NULL,
+#         action_time    DATE DEFAULT CURRENT_DATE,
+#         note           TEXT
+#     );
+#     """)
     
-    print("✅ Các bảng đã được tạo thành công!")
+#     print("✅ Các bảng đã được tạo thành công!")
 
-    # --- CHÈN DỮ LIỆU MẪU ---
-    # Chèn admin mặc định
-    try:
-        cur.execute("INSERT INTO Admins (adminname, password_hash, full_name, email) VALUES (%s, %s, %s, %s);",
-                    ("admin01", generate_password_hash("adminpass"), "Alice Admin", "admin01@example.com"))
-        print("✅ Admin mặc định đã được thêm.")
-    except psycopg2.IntegrityError:
-        db.rollback() # Bỏ qua nếu đã tồn tại
-        print("ℹ️ Admin mặc định đã tồn tại.")
+#     # --- CHÈN DỮ LIỆU MẪU ---
+#     # Chèn admin mặc định
+#     try:
+#         cur.execute("INSERT INTO Admins (adminname, password_hash, full_name, email) VALUES (%s, %s, %s, %s);",
+#                     ("admin01", generate_password_hash("adminpass"), "Alice Admin", "admin01@example.com"))
+#         print("✅ Admin mặc định đã được thêm.")
+#     except psycopg2.IntegrityError:
+#         db.rollback() # Bỏ qua nếu đã tồn tại
+#         print("ℹ️ Admin mặc định đã tồn tại.")
 
-    # Chèn nhà hàng mẫu (từ file insert_data.py)
-    try:
-        restaurants = [
-            ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza with fresh ingredients."),
-            ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi with modern twists."),
-        ]
-        cur.executemany("""
-        INSERT INTO Restaurants (name, location, cuisine, rating, description)
-        VALUES (%s, %s, %s, %s, %s)
-        """, restaurants)
-        print("✅ Dữ liệu nhà hàng mẫu đã được thêm.")
-    except psycopg2.IntegrityError:
-        db.rollback() # Bỏ qua nếu đã tồn tại
-        print("ℹ️ Dữ liệu nhà hàng mẫu đã tồn tại.")
+#     # Chèn nhà hàng mẫu (từ file insert_data.py)
+#     try:
+#         restaurants = [
+#             ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza with fresh ingredients."),
+#             ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi with modern twists."),
+#         ]
+#         cur.executemany("""
+#         INSERT INTO Restaurants (name, location, cuisine, rating, description)
+#         VALUES (%s, %s, %s, %s, %s)
+#         """, restaurants)
+#         print("✅ Dữ liệu nhà hàng mẫu đã được thêm.")
+#     except psycopg2.IntegrityError:
+#         db.rollback() # Bỏ qua nếu đã tồn tại
+#         print("ℹ️ Dữ liệu nhà hàng mẫu đã tồn tại.")
+
 
     db.commit()
     cur.close()
