@@ -1,36 +1,81 @@
 import sqlite3
 
-def insert_restaurants():
+def insert_sample_data():
     conn = sqlite3.connect("restaurant_reservation.db")
     cursor = conn.cursor()
 
-    restaurants = [
-        ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza with fresh ingredients."),
-        ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi with modern twists."),
-        ("Curry House", "Chicago, IL", "Indian", 4.3, "Traditional Indian curries with rich spices."),
-        ("Taco Fiesta", "Houston, TX", "Mexican", 4.2, "Street-style tacos with homemade tortillas."),
-        ("Burger Haven", "Miami, FL", "American", 4.4, "Classic and gourmet burgers with fresh toppings."),
-        ("Dragon Wok", "San Francisco, CA", "Chinese", 4.6, "Authentic Chinese stir-fry and dim sum."),
-        ("Le Gourmet", "Boston, MA", "French", 4.8, "Fine French dining with elegant atmosphere."),
-        ("Steak Supreme", "Dallas, TX", "Steakhouse", 4.5, "Premium steaks grilled to perfection."),
-        ("Seafood Shack", "Seattle, WA", "Seafood", 4.3, "Fresh catches daily with ocean views."),
-        ("Veggie Delight", "Portland, OR", "Vegetarian", 4.6, "Healthy plant-based meals and smoothies."),
-        ("Mediterraneo", "San Diego, CA", "Mediterranean", 4.4, "Mediterranean flavors with fresh olive oil."),
-        ("BBQ Barn", "Nashville, TN", "BBQ", 4.5, "Smoky BBQ ribs and pulled pork specialties."),
-        ("Kebab King", "Detroit, MI", "Middle Eastern", 4.2, "Authentic kebabs and falafel dishes."),
-        ("Golden Dragon", "Las Vegas, NV", "Chinese", 4.1, "Casual Chinese dining with family portions."),
-        ("Pasta Fresca", "Philadelphia, PA", "Italian", 4.7, "Handmade pasta and wood-fired pizza.")
-    ]
+    # --------------------------
+    # Insert Admin
+    # --------------------------
+    cursor.execute("""
+    INSERT INTO Admins (adminname, password_hash, full_name, email)
+    VALUES 
+        ('admin01', 'hashed_pw_admin', 'Alice Admin', 'admin01@example.com')
+    """)
 
+    # --------------------------
+    # Insert Customers
+    # --------------------------
+    cursor.executemany("""
+    INSERT INTO Customers (username, password_hash, full_name, email, phone)
+    VALUES (?, ?, ?, ?, ?)
+    """, [
+        ("john_doe", "hashed_pw_john", "John Doe", "john@example.com", "123456789"),
+        ("jane_smith", "hashed_pw_jane", "Jane Smith", "jane@example.com", "987654321")
+    ])
+
+    # --------------------------
+    # Insert Restaurants
+    # --------------------------
     cursor.executemany("""
     INSERT INTO Restaurants (name, location, cuisine, rating, description)
     VALUES (?, ?, ?, ?, ?)
-    """, restaurants)
+    """, [
+        ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza with fresh ingredients."),
+        ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi with modern twists.")
+    ])
+
+    # --------------------------
+    # Insert Tables
+    # --------------------------
+    cursor.executemany("""
+    INSERT INTO Tables (restaurant_id, table_number, capacity)
+    VALUES (?, ?, ?)
+    """, [
+        (1, "T1", 2),
+        (1, "T2", 4),
+        (1, "T3", 6),
+        (2, "T1", 2),
+        (2, "T2", 4),
+        (2, "T3", 6)
+    ])
+
+    # --------------------------
+    # Insert Reservations
+    # --------------------------
+    cursor.executemany("""
+    INSERT INTO Reservations (customer_id, restaurant_id, table_id, reservation_date, reservation_time, guests, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, [
+        (1, 1, 2, "2025-09-10", "19:00", 4, "pending"),     # John Doe at Pizza Palace
+        (2, 2, 5, "2025-09-12", "18:30", 2, "confirmed")   # Jane Smith at Sushi World
+    ])
+
+    # --------------------------
+    # Insert Reservation History
+    # --------------------------
+    cursor.executemany("""
+    INSERT INTO ReservationHistory (reservation_id, action, action_by_customer, action_by_admin, note)
+    VALUES (?, ?, ?, ?, ?)
+    """, [
+        (1, "created", 1, None, "John created a reservation at Pizza Palace."),
+        (2, "created", 2, None, "Jane created a reservation at Sushi World."),
+        (2, "confirmed", None, 1, "Admin confirmed Jane's reservation.")
+    ])
 
     conn.commit()
     conn.close()
-    print("✅ 15 restaurants inserted successfully!")
+    print("✅ Sample data inserted successfully!")
 
 if __name__ == "__main__":
-    insert_restaurants()
-#test
+    insert_sample_data()
