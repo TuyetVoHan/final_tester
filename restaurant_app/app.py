@@ -25,133 +25,6 @@ def close_db(exc):
     if db is not None:
         db.close()
 
-# -----------------------
-# DB initialization
-# -----------------------
-def init_db():
-    db = sqlite3.connect(DB_PATH)
-    cursor = db.cursor()
-    cursor.execute("PRAGMA foreign_keys = ON;")
-
-    # Customers
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Customers (
-        customer_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-        username      TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        full_name     TEXT,
-        email         TEXT UNIQUE NOT NULL,
-        phone         TEXT,
-        created_at    DATE DEFAULT (DATE('now'))
-    );
-    """)
-
-    # Admins
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Admins (
-        admin_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-        adminname     TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        full_name     TEXT,
-        email         TEXT UNIQUE NOT NULL,
-        created_at    DATE DEFAULT (DATE('now'))
-    );
-    """)
-
-    # Restaurants
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Restaurants (
-        restaurant_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name          TEXT NOT NULL,
-        location      TEXT NOT NULL,
-        cuisine       TEXT,
-        rating        REAL CHECK (rating >= 0 AND rating <= 5),
-        description   TEXT,
-        created_at    DATE DEFAULT (DATE('now'))
-    );
-    """)
-
-    # Tables
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Tables (
-        table_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-        restaurant_id INTEGER NOT NULL,
-        table_number  TEXT,
-        capacity      INTEGER NOT NULL,
-        FOREIGN KEY (restaurant_id) REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE
-    );
-    """)
-
-    # Reservations
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS Reservations (
-        reservation_id  INTEGER PRIMARY KEY AUTOINCREMENT,
-        customer_id     INTEGER NOT NULL,
-        restaurant_id   INTEGER NOT NULL,
-        table_id        INTEGER,
-        reservation_date DATE NOT NULL,
-        reservation_time TEXT NOT NULL,
-        guests          INTEGER NOT NULL CHECK (guests > 0),
-        status          TEXT CHECK (status IN ('pending', 'confirmed', 'rejected', 'completed', 'cancelled')) DEFAULT 'pending',
-        created_at      DATE DEFAULT (DATE('now')),
-        FOREIGN KEY (customer_id) REFERENCES Customers(customer_id) ON DELETE CASCADE,
-        FOREIGN KEY (restaurant_id) REFERENCES Restaurants(restaurant_id) ON DELETE CASCADE,
-        FOREIGN KEY (table_id) REFERENCES Tables(table_id) ON DELETE SET NULL
-    );
-    """)
-
-    # ReservationHistory
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS ReservationHistory (
-        history_id     INTEGER PRIMARY KEY AUTOINCREMENT,
-        reservation_id INTEGER NOT NULL,
-        action         TEXT NOT NULL,
-        action_by_admin INTEGER,
-        action_by_customer INTEGER,
-        action_time    DATE DEFAULT (DATE('now')),
-        note           TEXT,
-        FOREIGN KEY (reservation_id) REFERENCES Reservations(reservation_id) ON DELETE CASCADE,
-        FOREIGN KEY (action_by_admin) REFERENCES Admins(admin_id) ON DELETE SET NULL,
-        FOREIGN KEY (action_by_customer) REFERENCES Customers(customer_id) ON DELETE SET NULL
-    );
-    """)
-
-    db.commit()
-
-    # insert a default admin and sample data if not exist
-    cur = db.cursor()
-    cur.execute("SELECT COUNT(*) FROM Admins;")
-    if cur.fetchone()[0] == 0:
-        cur.execute("INSERT INTO Admins (adminname, password_hash, full_name, email) VALUES (?, ?, ?, ?);",
-                    ("admin01", generate_password_hash("adminpass"), "Alice Admin", "admin01@example.com"))
-
-    cur.execute("SELECT COUNT(*) FROM Customers;")
-    if cur.fetchone()[0] == 0:
-        cur.executemany("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);", [
-            ("john_doe", generate_password_hash("johnpass"), "John Doe", "john@example.com", "123456789"),
-            ("jane_smith", generate_password_hash("janepass"), "Jane Smith", "jane@example.com", "987654321"),
-        ])
-
-    cur.execute("SELECT COUNT(*) FROM Restaurants;")
-    if cur.fetchone()[0] == 0:
-        cur.executemany("INSERT INTO Restaurants (name, location, cuisine, rating, description) VALUES (?, ?, ?, ?, ?);", [
-            ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza."),
-            ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi."),
-        ])
-
-    cur.execute("SELECT COUNT(*) FROM Tables;")
-    if cur.fetchone()[0] == 0:
-        cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", [
-            (1, "T1", 2), (1, "T2", 4), (1, "T3", 6),
-            (2, "T1", 2), (2, "T2", 4), (2, "T3", 6),
-        ])
-
-    db.commit()
-    db.close()
-
-# initialize DB if missing
-if not os.path.exists(DB_PATH):
-    init_db()
 
 # -----------------------
 # Helpers & decorators
@@ -366,68 +239,74 @@ def restaurant_detail(rid):
         flash('Restaurant not found.', 'danger')
         return redirect(url_for('restaurants'))
 
-    # fetch tables
-    tables = db.execute("SELECT * FROM Tables WHERE restaurant_id = ? ORDER BY capacity", (rid,)).fetchall()
-
+    # --- BẮT ĐẦU SỬA ĐỔI ---
     if request.method == 'POST':
         if 'role' not in session or session['role'] != 'customer':
             flash('Please login as a customer to make a reservation.', 'warning')
             return redirect(url_for('login'))
 
         customer_id = session['user']
-        table_id = request.form.get('table_id')  # optional, can be None
         date = request.form['date']
         time = request.form['time']
         guests = int(request.form['guests'])
+        
+        # Lấy table_id người dùng chọn (có thể rỗng)
+        selected_table_id = request.form.get('table_id') 
 
-        # validate date format and capacity
-        try:
-            datetime.strptime(date, "%Y-%m-%d")
-        except ValueError:
-            flash('Invalid date format. Use YYYY-MM-DD.', 'danger')
-            return redirect(url_for('restaurant_detail', rid=rid))
-
-        # check table capacity if chosen
-        if table_id:
-            t = db.execute("SELECT capacity FROM Tables WHERE table_id = ? AND restaurant_id = ?", (table_id, rid)).fetchone()
-            if not t:
-                flash('Invalid table selected.', 'danger')
+        # 1. Kiểm tra giờ hoạt động của nhà hàng
+        opening_time = restaurant['opening_time']
+        closing_time = restaurant['closing_time']
+        if opening_time and closing_time:
+            if not (opening_time <= time < closing_time):
+                flash(f"Sorry, the restaurant is only open from {opening_time} to {closing_time}.", 'danger')
                 return redirect(url_for('restaurant_detail', rid=rid))
-            if guests > t['capacity']:
-                flash('Selected table cannot accommodate that many guests.', 'danger')
+        
+        assigned_table_id = None
+        # 2. Xử lý logic chọn bàn
+        # Nếu người dùng chọn một bàn cụ thể
+        if selected_table_id:
+             # Kiểm tra xem bàn người dùng chọn có còn trống vào thời điểm đó không
+            is_available = db.execute("""
+                SELECT table_id FROM Tables
+                WHERE table_id = ? AND table_id NOT IN (
+                    SELECT r.table_id FROM Reservations r
+                    WHERE r.restaurant_id = ? AND r.table_id IS NOT NULL AND r.reservation_date = ?
+                    AND r.status IN ('pending', 'confirmed')
+                    AND STRFTIME('%H:%M', r.reservation_time, '+2 hours') > ?
+                    AND r.reservation_time < STRFTIME('%H:%M', ?, '+2 hours')
+                )
+            """, (selected_table_id, rid, date, time, time)).fetchone()
+            if is_available:
+                assigned_table_id = selected_table_id
+            else:
+                flash('The table you selected is not available at that time. Please choose another or let us auto-assign.', 'danger')
                 return redirect(url_for('restaurant_detail', rid=rid))
+        # Nếu người dùng không chọn bàn (auto-assign)
         else:
-            # try to auto-assign a table with sufficient capacity and availability
-            candidate = db.execute("""
-                SELECT t.table_id, t.capacity FROM Tables t
-                WHERE t.restaurant_id = ? AND t.capacity >= ?
-                AND t.table_id NOT IN (
-                    SELECT table_id FROM Reservations r
-                    WHERE r.reservation_date = ? AND r.reservation_time = ? AND r.status IN ('pending', 'confirmed')
+            available_tables = db.execute("""
+                SELECT t.table_id FROM Tables t
+                WHERE t.restaurant_id = ? AND t.capacity >= ? AND t.table_id NOT IN (
+                    SELECT r.table_id FROM Reservations r
+                    WHERE r.restaurant_id = ? AND r.table_id IS NOT NULL AND r.reservation_date = ?
+                    AND r.status IN ('pending', 'confirmed')
+                    AND STRFTIME('%H:%M', r.reservation_time, '+2 hours') > ?
+                    AND r.reservation_time < STRFTIME('%H:%M', ?, '+2 hours')
                 )
                 ORDER BY t.capacity ASC
-                LIMIT 1
-            """, (rid, guests, date, time)).fetchone()
-            if candidate:
-                table_id = candidate['table_id']
-            else:
-                flash('No available table for that time and party size.', 'danger')
-                return redirect(url_for('restaurant_detail', rid=rid))
+            """, (rid, guests, rid, date, time, time)).fetchall()
 
-        # verify no conflicting reservation on same table/time if table assigned
-        conflict = db.execute("""
-            SELECT 1 FROM Reservations
-            WHERE table_id = ? AND reservation_date = ? AND reservation_time = ? AND status IN ('pending','confirmed')
-        """, (table_id, date, time)).fetchone()
-        if conflict:
-            flash('Selected table already booked for that time.', 'danger')
+            if available_tables:
+                assigned_table_id = available_tables[0]['table_id']
+
+        if not assigned_table_id:
+            flash('No available table for that time and party size. Please try another time.', 'danger')
             return redirect(url_for('restaurant_detail', rid=rid))
 
-        # save reservation
+        # Lưu lượt đặt bàn
         cur = db.execute("""
             INSERT INTO Reservations (customer_id, restaurant_id, table_id, reservation_date, reservation_time, guests, status)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (customer_id, rid, table_id, date, time, guests, 'pending'))
+        """, (customer_id, rid, assigned_table_id, date, time, guests, 'pending'))
         db.commit()
         rid_new = cur.lastrowid
 
@@ -437,13 +316,12 @@ def restaurant_detail(rid):
             VALUES (?, 'created', ?, ?)
         """, (rid_new, customer_id, 'Customer created reservation.'))
         db.commit()
-
-        # simulate confirmation email
-        print(f"[SIMULATED EMAIL] Reservation #{rid_new} created for customer {customer_id} on {date} at {time} at restaurant {rid}.")
-
+        
         flash('Reservation created and is pending confirmation.', 'success')
         return redirect(url_for('bookings'))
 
+    # Lấy danh sách tất cả các bàn của nhà hàng để hiển thị trong dropdown
+    tables = db.execute("SELECT * FROM Tables WHERE restaurant_id = ?", (rid,)).fetchall()
     return render_template('restaurant_detail.html', restaurant=restaurant, tables=tables)
 
 # Customer bookings
@@ -530,7 +408,41 @@ def edit_reservation(res_id):
 @app.route('/admin')
 @login_required(role='admin')
 def admin_dashboard():
-    return render_template('admin_dashboard.html')
+    db = get_db()
+
+    # Thống kê số lượt đặt bàn mới trong ngày
+    new_bookings_today = db.execute(
+        "SELECT COUNT(*) as count FROM Reservations WHERE DATE(created_at) = DATE('now')"
+    ).fetchone()['count']
+
+    # Thống kê tổng số khách hàng
+    total_customers = db.execute(
+        "SELECT COUNT(*) as count FROM Customers"
+    ).fetchone()['count']
+    
+    # Thống kê tổng số nhà hàng
+    total_restaurants = db.execute(
+        "SELECT COUNT(*) as count FROM Restaurants"
+    ).fetchone()['count']
+
+    # Top 5 nhà hàng được đặt nhiều nhất
+    top_restaurants = db.execute("""
+        SELECT r.name, COUNT(res.reservation_id) as booking_count
+        FROM Restaurants r
+        LEFT JOIN Reservations res ON r.restaurant_id = res.restaurant_id
+        GROUP BY r.restaurant_id
+        ORDER BY booking_count DESC
+        LIMIT 5
+    """).fetchall()
+
+    stats = {
+        'new_bookings_today': new_bookings_today,
+        'total_customers': total_customers,
+        'total_restaurants': total_restaurants,
+        'top_restaurants': top_restaurants
+    }
+
+    return render_template('admin_dashboard.html', stats=stats)
 
 # Admin: list restaurants
 @app.route('/admin/restaurants')
@@ -552,13 +464,16 @@ def admin_restaurant_form(rid=None):
         cuisine = request.form['cuisine']
         rating = float(request.form.get('rating') or 0)
         description = request.form.get('description', '')
+        opening_time = request.form.get('opening_time') # THÊM DÒNG NÀY
+        closing_time = request.form.get('closing_time') # THÊM DÒNG NÀY
+
         if rid:
-            db.execute("UPDATE Restaurants SET name=?, location=?, cuisine=?, rating=?, description=? WHERE restaurant_id=?",
-                       (name, location, cuisine, rating, description, rid))
+            db.execute("UPDATE Restaurants SET name=?, location=?, cuisine=?, rating=?, description=?, opening_time=?, closing_time=? WHERE restaurant_id=?",
+                       (name, location, cuisine, rating, description, opening_time, closing_time, rid)) # CẬP NHẬT CÂU LỆNH
             flash('Restaurant updated.', 'success')
         else:
-            cur = db.execute("INSERT INTO Restaurants (name, location, cuisine, rating, description) VALUES (?, ?, ?, ?, ?)",
-                        (name, location, cuisine, rating, description))
+            cur = db.execute("INSERT INTO Restaurants (name, location, cuisine, rating, description, opening_time, closing_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (name, location, cuisine, rating, description, opening_time, closing_time)) # CẬP NHẬT CÂU LỆNH
             rid = cur.lastrowid
             flash('Restaurant added.', 'success')
         db.commit()
@@ -568,7 +483,6 @@ def admin_restaurant_form(rid=None):
     if rid:
         restaurant = db.execute("SELECT * FROM Restaurants WHERE restaurant_id = ?", (rid,)).fetchone()
     return render_template('admin_restaurant_form.html', restaurant=restaurant)
-
 # Admin: delete
 @app.route('/admin/restaurant/<int:rid>/delete', methods=['POST'])
 @login_required(role='admin')
@@ -670,6 +584,57 @@ def admin_delete_user(uid):
     db.commit()
     flash('User account has been deleted.', 'info')
     return redirect(url_for('admin_manage_users'))
+
+# -----------------------
+# Admin: Manage Tables
+# -----------------------
+@app.route('/admin/restaurant/<int:rid>/tables', methods=['GET', 'POST'])
+@login_required(role='admin')
+def admin_manage_tables(rid):
+    db = get_db()
+    
+    # Lấy thông tin nhà hàng để hiển thị tên
+    restaurant = db.execute("SELECT * FROM Restaurants WHERE restaurant_id = ?", (rid,)).fetchone()
+    if not restaurant:
+        flash('Restaurant not found.', 'danger')
+        return redirect(url_for('admin_restaurants'))
+
+    # Xử lý khi admin thêm bàn mới
+    if request.method == 'POST':
+        table_number = request.form['table_number']
+        capacity = int(request.form['capacity'])
+        
+        if not table_number or capacity <= 0:
+            flash('Table number and capacity are required.', 'danger')
+        else:
+            db.execute("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?)",
+                       (rid, table_number, capacity))
+            db.commit()
+            flash('New table added successfully.', 'success')
+        
+        return redirect(url_for('admin_manage_tables', rid=rid))
+
+    # Lấy danh sách các bàn hiện có của nhà hàng
+    tables = db.execute("SELECT * FROM Tables WHERE restaurant_id = ? ORDER BY table_number", (rid,)).fetchall()
+    
+    return render_template('admin_manage_tables.html', tables=tables, restaurant=restaurant)
+
+@app.route('/admin/table/<int:tid>/delete', methods=['POST'])
+@login_required(role='admin')
+def admin_delete_table(tid):
+    db = get_db()
+    
+    # Lấy restaurant_id để redirect lại đúng trang
+    table = db.execute("SELECT restaurant_id FROM Tables WHERE table_id = ?", (tid,)).fetchone()
+    if table:
+        db.execute("DELETE FROM Tables WHERE table_id = ?", (tid,))
+        db.commit()
+        flash('Table deleted.', 'info')
+        return redirect(url_for('admin_manage_tables', rid=table['restaurant_id']))
+    
+    flash('Table not found.', 'danger')
+    return redirect(url_for('admin_restaurants'))
+
 
 # -----------------------
 # Run app

@@ -2,18 +2,43 @@
 <html>
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Restaurant Reservation{% endblock %}</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
     />
+    <style>
+      @media screen and (min-width: 769px) and (max-width: 1023px) {
+        .navbar-menu {
+          display: flex !important;
+          flex-grow: 1;
+        }
+        .navbar-burger {
+          display: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <nav class="navbar is-light">
+    <nav class="navbar is-light" role="navigation" aria-label="main navigation">
       <div class="navbar-brand">
         <a class="navbar-item" href="{{ url_for('index') }}">ResoApp</a>
+
+        <a
+          role="button"
+          class="navbar-burger"
+          aria-label="menu"
+          aria-expanded="false"
+          data-target="navbarBasicExample"
+        >
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
       </div>
-      <div class="navbar-menu">
+
+      <div id="navbarBasicExample" class="navbar-menu">
         <div class="navbar-start">
           <a class="navbar-item" href="{{ url_for('restaurants') }}"
             >Restaurants</a
@@ -59,5 +84,31 @@
         {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
       </div>
     </section>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Lấy tất cả các phần tử "navbar-burger"
+        const $navbarBurgers = Array.prototype.slice.call(
+          document.querySelectorAll(".navbar-burger"),
+          0
+        );
+
+        // Kiểm tra xem có navbar burger nào không
+        if ($navbarBurgers.length > 0) {
+          // Thêm sự kiện click cho mỗiอัน
+          $navbarBurgers.forEach((el) => {
+            el.addEventListener("click", () => {
+              // Lấy target từ thuộc tính "data-target"
+              const target = el.dataset.target;
+              const $target = document.getElementById(target);
+
+              // Thêm/xóa lớp "is-active" trên cả "navbar-burger" và "navbar-menu"
+              el.classList.toggle("is-active");
+              $target.classList.toggle("is-active");
+            });
+          });
+        }
+      });
+    </script>
   </body>
 </html>

@@ -3,7 +3,8 @@
 <h2 class="title">Reservations (Admin)</h2>
 {% for r in reservations %}
   <div class="box">
-    <p><strong>#{{ r['reservation_id'] }}</strong> — {{ r['restaurant_name'] }} | {{ r['reservation_date'] }} {{ r['reservation_time'] }} | {{ r['guests'] }} guests | <em>{{ r['status'] }}</em></p>
+    {# THÊM r['table_number'] VÀO DÒNG DƯỚI ĐÂY #}
+    <p><strong>#{{ r['reservation_id'] }}</strong> — {{ r['restaurant_name'] }} | <strong>Table: {{ r['table_number'] or 'N/A' }}</strong> | {{ r['reservation_date'] }} {{ r['reservation_time'] }} | {{ r['guests'] }} guests | <em>{{ r['status'] }}</em></p>
     <p>Customer: {{ r['username'] }}</p>
     <form method="post" action="{{ url_for('admin_update_reservation', res_id=r['reservation_id']) }}">
       <div class="field has-addons">

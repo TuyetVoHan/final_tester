@@ -1,12 +1,75 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <h2 class="title">{{ 'Edit' if restaurant else 'Add' }} Restaurant</h2>
 <form method="post">
-  <div class="field"><label class="label">Name</label><div class="control"><input class="input" name="name" value="{{ restaurant['name'] if restaurant }}"></div></div>
-  <div class="field"><label class="label">Location</label><div class="control"><input class="input" name="location" value="{{ restaurant['location'] if restaurant }}"></div></div>
-  <div class="field"><label class="label">Cuisine</label><div class="control"><input class="input" name="cuisine" value="{{ restaurant['cuisine'] if restaurant }}"></div></div>
-  <div class="field"><label class="label">Rating</label><div class="control"><input class="input" name="rating" value="{{ restaurant['rating'] if restaurant }}"></div></div>
-  <div class="field"><label class="label">Description</label><div class="control"><textarea class="textarea" name="description">{{ restaurant['description'] if restaurant }}</textarea></div></div>
+  <div class="field">
+    <label class="label">Name</label>
+    <div class="control">
+      <input
+        class="input"
+        name="name"
+        value="{{ restaurant['name'] if restaurant }}"
+      />
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">Location</label>
+    <div class="control">
+      <input
+        class="input"
+        name="location"
+        value="{{ restaurant['location'] if restaurant }}"
+      />
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">Cuisine</label>
+    <div class="control">
+      <input
+        class="input"
+        name="cuisine"
+        value="{{ restaurant['cuisine'] if restaurant }}"
+      />
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">Rating</label>
+    <div class="control">
+      <input
+        class="input"
+        name="rating"
+        value="{{ restaurant['rating'] if restaurant }}"
+      />
+    </div>
+  </div>
+
+  <div class="field is-grouped">
+    <div class="control is-expanded">
+      <label class="label">Opening Time</label>
+      <input
+        class="input"
+        type="time"
+        name="opening_time"
+        value="{{ restaurant['opening_time'] if restaurant }}"
+      />
+    </div>
+    <div class="control is-expanded">
+      <label class="label">Closing Time</label>
+      <input
+        class="input"
+        type="time"
+        name="closing_time"
+        value="{{ restaurant['closing_time'] if restaurant }}"
+      />
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">Description</label>
+    <div class="control">
+      <textarea class="textarea" name="description">
+{{ restaurant['description'] if restaurant }}</textarea
+      >
+    </div>
+  </div>
   <div class="control"><button class="button is-primary">Save</button></div>
 </form>
 {% endblock %}

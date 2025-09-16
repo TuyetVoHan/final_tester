@@ -1,5 +1,14 @@
 {% extends "base.html" %} {% block content %}
 <h2 class="title">{{ restaurant['name'] }}</h2>
+
+{% if restaurant.opening_time and restaurant.closing_time %}
+<div class="tags has-addons">
+  <span class="tag is-dark">Open</span>
+  <span class="tag is-info"
+    >{{ restaurant.opening_time }} - {{ restaurant.closing_time }}</span
+  >
+</div>
+{% endif %}
 <p>{{ restaurant['cuisine'] }} — {{ restaurant['location'] }}</p>
 <p>{{ restaurant['description'] }}</p>
 

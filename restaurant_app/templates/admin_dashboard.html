@@ -1,15 +1,65 @@
 {% extends "base.html" %} {% block content %}
 <h2 class="title">Admin Dashboard</h2>
-<p>
-  <a class="button is-link" href="{{ url_for('admin_restaurants') }}"
-    >Manage Restaurants</a
-  >
-  <a class="button is-link" href="{{ url_for('admin_reservations') }}"
-    >Manage Reservations</a
-  >
-  {# SỬA DÒNG DƯỚI ĐÂY #}
-  <a class="button is-link" href="{{ url_for('admin_manage_users') }}"
-    >Manage Users</a
-  >
-</p>
+
+<nav class="level">
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">New Bookings Today</p>
+      <p class="title">{{ stats.new_bookings_today }}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Total Customers</p>
+      <p class="title">{{ stats.total_customers }}</p>
+    </div>
+  </div>
+  <div class="level-item has-text-centered">
+    <div>
+      <p class="heading">Total Restaurants</p>
+      <p class="title">{{ stats.total_restaurants }}</p>
+    </div>
+  </div>
+</nav>
+<hr />
+<div class="columns">
+  <div class="column">
+    <h3 class="subtitle">Management</h3>
+    <p>
+      <a class="button is-link" href="{{ url_for('admin_restaurants') }}"
+        >Manage Restaurants</a
+      >
+      <a class="button is-link" href="{{ url_for('admin_reservations') }}"
+        >Manage Reservations</a
+      >
+      <a class="button is-link" href="{{ url_for('admin_manage_users') }}"
+        >Manage Users</a
+      >
+    </p>
+  </div>
+
+  <div class="column">
+    <h3 class="subtitle">Top 5 Most Booked Restaurants</h3>
+    {% if stats.top_restaurants %}
+    <table class="table is-fullwidth">
+      <thead>
+        <tr>
+          <th>Restaurant Name</th>
+          <th class="has-text-right">Total Bookings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in stats.top_restaurants %}
+        <tr>
+          <td>{{ r['name'] }}</td>
+          <td class="has-text-right">{{ r['booking_count'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>No booking data available.</p>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
