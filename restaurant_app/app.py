@@ -229,100 +229,102 @@ def restaurants():
     rows = cur.fetchall()
     return render_template('restaurants.html', restaurants=rows, q_location=q_location, q_cuisine=q_cuisine)
 
+def is_reservation_date_valid(date_str):
+    """Kiểm tra xem ngày đặt bàn có hợp lệ không (không phải quá khứ)."""
+    return date_str >= datetime.now().strftime('%Y-%m-%d')
+
+def is_reservation_time_valid(time_str, restaurant):
+    """Kiểm tra xem thời gian đặt có nằm trong giờ mở cửa của nhà hàng không."""
+    opening_time = restaurant['opening_time']
+    closing_time = restaurant['closing_time']
+    if opening_time and closing_time:
+        return opening_time <= time_str < closing_time
+    return True # Nếu nhà hàng không set giờ, coi như luôn hợp lệ
+
+def find_available_table(db, rid, date, time, guests, selected_table_id=None):
+    """Tìm một bàn trống phù hợp, ưu tiên bàn do người dùng chọn."""
+    if selected_table_id:
+        # Kiểm tra xem bàn người dùng chọn có còn trống không
+        is_available = db.execute("""
+            SELECT table_id FROM Tables
+            WHERE table_id = ? AND capacity >= ? AND table_id NOT IN (
+                SELECT r.table_id FROM Reservations r
+                WHERE r.table_id IS NOT NULL AND r.reservation_date = ?
+                AND r.status IN ('pending', 'confirmed')
+                AND STRFTIME('%H:%M', r.reservation_time, '+2 hours') > ?
+                AND r.reservation_time < STRFTIME('%H:%M', ?, '+2 hours')
+            )
+        """, (selected_table_id, guests, date, time, time)).fetchone()
+        if is_available:
+            return is_available['table_id']
+        else:
+            return None # Bàn đã chọn không hợp lệ hoặc không đủ chỗ
+    else:
+        # Tự động tìm bàn nhỏ nhất phù hợp
+        available_table = db.execute("""
+            SELECT t.table_id FROM Tables t
+            WHERE t.restaurant_id = ? AND t.capacity >= ? AND t.table_id NOT IN (
+                SELECT r.table_id FROM Reservations r
+                WHERE r.table_id IS NOT NULL AND r.reservation_date = ?
+                AND r.status IN ('pending', 'confirmed')
+                AND STRFTIME('%H:%M', r.reservation_time, '+2 hours') > ?
+                AND r.reservation_time < STRFTIME('%H:%M', ?, '+2 hours')
+            )
+            ORDER BY t.capacity ASC LIMIT 1
+        """, (rid, guests, date, time, time)).fetchone()
+        return available_table['table_id'] if available_table else None
+
 # Restaurant detail & reservation form
 @app.route('/restaurant/<int:rid>', methods=['GET', 'POST'])
 def restaurant_detail(rid):
     db = get_db()
-    cur = db.execute("SELECT * FROM Restaurants WHERE restaurant_id = ?", (rid,))
-    restaurant = cur.fetchone()
+    restaurant = db.execute("SELECT * FROM Restaurants WHERE restaurant_id = ?", (rid,)).fetchone()
     if not restaurant:
         flash('Restaurant not found.', 'danger')
         return redirect(url_for('restaurants'))
 
-    # --- BẮT ĐẦU SỬA ĐỔI ---
     if request.method == 'POST':
         if 'role' not in session or session['role'] != 'customer':
             flash('Please login as a customer to make a reservation.', 'warning')
             return redirect(url_for('login'))
 
-        customer_id = session['user']
+        # --- Lấy dữ liệu từ form ---
         date = request.form['date']
         time = request.form['time']
         guests = int(request.form['guests'])
-        
-        # Lấy table_id người dùng chọn (có thể rỗng)
-        selected_table_id = request.form.get('table_id') 
+        selected_table_id = request.form.get('table_id')
 
-        # 1. Kiểm tra giờ hoạt động của nhà hàng
-        opening_time = restaurant['opening_time']
-        closing_time = restaurant['closing_time']
-        if opening_time and closing_time:
-            if not (opening_time <= time < closing_time):
-                flash(f"Sorry, the restaurant is only open from {opening_time} to {closing_time}.", 'danger')
-                return redirect(url_for('restaurant_detail', rid=rid))
-        
-        assigned_table_id = None
-        # 2. Xử lý logic chọn bàn
-        # Nếu người dùng chọn một bàn cụ thể
-        if selected_table_id:
-             # Kiểm tra xem bàn người dùng chọn có còn trống vào thời điểm đó không
-            is_available = db.execute("""
-                SELECT table_id FROM Tables
-                WHERE table_id = ? AND table_id NOT IN (
-                    SELECT r.table_id FROM Reservations r
-                    WHERE r.restaurant_id = ? AND r.table_id IS NOT NULL AND r.reservation_date = ?
-                    AND r.status IN ('pending', 'confirmed')
-                    AND STRFTIME('%H:%M', r.reservation_time, '+2 hours') > ?
-                    AND r.reservation_time < STRFTIME('%H:%M', ?, '+2 hours')
-                )
-            """, (selected_table_id, rid, date, time, time)).fetchone()
-            if is_available:
-                assigned_table_id = selected_table_id
-            else:
-                flash('The table you selected is not available at that time. Please choose another or let us auto-assign.', 'danger')
-                return redirect(url_for('restaurant_detail', rid=rid))
-        # Nếu người dùng không chọn bàn (auto-assign)
-        else:
-            available_tables = db.execute("""
-                SELECT t.table_id FROM Tables t
-                WHERE t.restaurant_id = ? AND t.capacity >= ? AND t.table_id NOT IN (
-                    SELECT r.table_id FROM Reservations r
-                    WHERE r.restaurant_id = ? AND r.table_id IS NOT NULL AND r.reservation_date = ?
-                    AND r.status IN ('pending', 'confirmed')
-                    AND STRFTIME('%H:%M', r.reservation_time, '+2 hours') > ?
-                    AND r.reservation_time < STRFTIME('%H:%M', ?, '+2 hours')
-                )
-                ORDER BY t.capacity ASC
-            """, (rid, guests, rid, date, time, time)).fetchall()
-
-            if available_tables:
-                assigned_table_id = available_tables[0]['table_id']
-
-        if not assigned_table_id:
-            flash('No available table for that time and party size. Please try another time.', 'danger')
+        # --- Gọi các hàm kiểm tra riêng biệt ---
+        if not is_reservation_date_valid(date):
+            flash("You cannot make a reservation for a past date.", 'danger')
             return redirect(url_for('restaurant_detail', rid=rid))
 
-        # Lưu lượt đặt bàn
+        if not is_reservation_time_valid(time, restaurant):
+            flash(f"Sorry, the restaurant is only open from {restaurant['opening_time']} to {restaurant['closing_time']}.", 'danger')
+            return redirect(url_for('restaurant_detail', rid=rid))
+
+        assigned_table_id = find_available_table(db, rid, date, time, guests, selected_table_id)
+
+        # --- Xử lý kết quả ---
+        if not assigned_table_id:
+            flash('No available table for that time and party size. Please try another time or select a different table.', 'danger')
+            return redirect(url_for('restaurant_detail', rid=rid))
+
+        # --- Lưu vào CSDL nếu mọi thứ hợp lệ ---
+        customer_id = session['user']
         cur = db.execute("""
             INSERT INTO Reservations (customer_id, restaurant_id, table_id, reservation_date, reservation_time, guests, status)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (customer_id, rid, assigned_table_id, date, time, guests, 'pending'))
         db.commit()
-        rid_new = cur.lastrowid
-
-        # log
-        db.execute("""
-            INSERT INTO ReservationHistory (reservation_id, action, action_by_customer, note)
-            VALUES (?, 'created', ?, ?)
-        """, (rid_new, customer_id, 'Customer created reservation.'))
-        db.commit()
         
         flash('Reservation created and is pending confirmation.', 'success')
         return redirect(url_for('bookings'))
 
-    # Lấy danh sách tất cả các bàn của nhà hàng để hiển thị trong dropdown
+    # --- Xử lý cho GET request ---
+    today_date = datetime.now().strftime('%Y-%m-%d')
     tables = db.execute("SELECT * FROM Tables WHERE restaurant_id = ?", (rid,)).fetchall()
-    return render_template('restaurant_detail.html', restaurant=restaurant, tables=tables)
+    return render_template('restaurant_detail.html', restaurant=restaurant, tables=tables, today_date=today_date)
 
 # Customer bookings
 @app.route('/bookings')
@@ -362,11 +364,16 @@ def edit_reservation(res_id):
             flash('Reservation cancelled.', 'info')
             return redirect(url_for('bookings'))
 
-        # else modify
         date = request.form['date']
         time = request.form['time']
         guests = int(request.form['guests'])
-        # try to keep same table if capacity OK and no conflict else try reassign
+
+        # --- BẮT ĐẦU VALIDATION NGÀY THÁNG ---
+        if date < datetime.now().strftime('%Y-%m-%d'):
+            flash("You cannot move a reservation to a past date.", 'danger')
+            return redirect(url_for('edit_reservation', res_id=res_id))
+        # --- KẾT THÚC VALIDATION NGÀY THÁNG ---
+
         table_id = res['table_id']
         if table_id:
             cap = db.execute("SELECT capacity FROM Tables WHERE table_id = ?", (table_id,)).fetchone()['capacity']
@@ -398,10 +405,10 @@ def edit_reservation(res_id):
         flash('Reservation updated.', 'success')
         return redirect(url_for('bookings'))
 
-    # GET
+    # GET: Lấy ngày hiện tại để truyền ra template
+    today_date = datetime.now().strftime('%Y-%m-%d')
     rest_name = db.execute("SELECT name FROM Restaurants WHERE restaurant_id = ?", (res['restaurant_id'],)).fetchone()['name']
-    return render_template('restaurant_detail.html', restaurant={'restaurant_id': res['restaurant_id'], 'name': rest_name}, tables=[], reservation=res, edit_mode=True)
-
+    return render_template('restaurant_detail.html', restaurant={'restaurant_id': res['restaurant_id'], 'name': rest_name}, tables=[], reservation=res, edit_mode=True, today_date=today_date)
 # -----------------------
 # Admin routes
 # -----------------------

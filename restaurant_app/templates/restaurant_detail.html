@@ -16,12 +16,13 @@
 <h3 class="subtitle">Edit reservation #{{ reservation['reservation_id'] }}</h3>
 <form method="post">
   <div class="field">
-    <label>Date</label
-    ><input
+    <label>Date</label>
+    <input
       class="input"
       type="date"
       name="date"
       value="{{ reservation['reservation_date'] }}"
+      min="{{ today_date }}"
       required
     />
   </div>
@@ -62,7 +63,14 @@
 <h3 class="subtitle">Make a reservation</h3>
 <form method="post">
   <div class="field">
-    <label>Date</label><input class="input" type="date" name="date" required />
+    <label>Date</label>
+    <input
+      class="input"
+      type="date"
+      name="date"
+      min="{{ today_date }}"
+      required
+    />
   </div>
   <div class="field">
     <label>Time</label><input class="input" type="time" name="time" required />
