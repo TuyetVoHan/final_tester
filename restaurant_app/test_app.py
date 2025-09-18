@@ -59,7 +59,7 @@ class TestCustomerFlow(unittest.TestCase):
 
     def test_make_reservation(self):
         self.login("testuser", "password")
-        self.driver.get("https://final-tester.onrender.com/restaurants/1") # Assuming restaurant with ID 1 exists
+        self.driver.get("https://final-tester.onrender.com/restaurant/1") # Assuming restaurant with ID 1 exists
         time.sleep(1)
         self.driver.find_element(By.NAME, "date").send_keys("2025-12-31")
         self.driver.find_element(By.NAME, "time").send_keys("19:00")
