@@ -56,8 +56,10 @@ class AutomationTest(unittest.TestCase):
         driver.get(BASE_URL + "restaurants")
         driver.find_element(By.NAME, "location").send_keys("Hanoi")
         driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
-        restaurants = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box h3.is-4")))
+        restaurants = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box ")))
+
         self.assertEqual(len(restaurants), 1)
+
         self.assertIn("The Golden Spoon", restaurants[0].text)
 
     def test_AT_SRC_03_search_not_found(self):
@@ -70,6 +72,59 @@ class AutomationTest(unittest.TestCase):
             EC.presence_of_element_located((By.XPATH, "//p[contains(text(), 'No restaurants found.')]"))).text
         self.assertEqual("No restaurants found.", no_results_msg)
 
+    def test_AT_SRC_04_search_empty_string(self):
+        driver = self.driver
+        driver.get(BASE_URL + "restaurants")
+
+        # Không nhập gì vào location, bấm search
+        driver.find_element(By.NAME, "location").send_keys("")
+        driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
+        time.sleep(2)
+
+        # Lấy danh sách tất cả restaurants
+        restaurants = self.wait.until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box h3.is-4"))
+        )
+
+        # Assert: Có nhiều hơn 0 nhà hàng (không bị lọc)
+        self.assertGreater(len(restaurants), 0)
+    def test_AT_SRC_05_search_sql_injection(self):
+        driver = self.driver
+        driver.get(BASE_URL + "restaurants")
+
+        # Nhập chuỗi SQL Injection
+        driver.find_element(By.NAME, "location").send_keys("' OR 1=1;--")
+        driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
+        time.sleep(2)
+
+        # Kiểm tra kết quả (không bị lỗi, không hiển thị tất cả nhà hàng)
+        restaurants = driver.find_elements(By.CSS_SELECTOR, ".box h3.is-4")
+
+        # Có thể là 0 hoặc rất ít, nhưng không được crash
+        self.assertTrue(len(restaurants) == 0 )
+
+    def test_AT_SRC_06_search_multiple_filters(self):
+        driver = self.driver
+        driver.get(BASE_URL + "restaurants")
+
+        # Nhập location = New York
+        driver.find_element(By.NAME, "location").send_keys("New York")
+
+        driver.find_element(By.NAME, "cuisine").send_keys("Italian")
+
+        # Bấm search
+        driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
+        time.sleep(2)
+
+        # Lấy danh sách kết quả
+        restaurants = self.wait.until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box h3.is-4"))
+        )
+
+        # Assert: Có ít nhất 1 restaurant và text phải chứa Italian
+        self.assertGreater(len(restaurants), 0)
+        for r in restaurants:
+            self.assertIn("Italian", r.text)
     # Chức năng Đặt bàn
 
     def test_AT_REV_01_make_reservation_success(self):
