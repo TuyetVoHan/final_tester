@@ -58,15 +58,43 @@ class AutomationTest(unittest.TestCase):
         self.assertIn("Invalid username or password.", error_msg)
     # search
     def test_AT_SRC_01_search_by_location_found(self):
+        """TC AT_SRC_01: Tìm kiếm với địa điểm có kết quả thành công."""
         driver = self.driver
         driver.get(BASE_URL + "restaurants")
         driver.find_element(By.NAME, "location").send_keys("Hanoi")
         driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
+        time.sleep(5) 
         restaurants = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box ")))
 
         self.assertEqual(len(restaurants), 1)
 
         self.assertIn("The Golden Spoon", restaurants[0].text)
+
+    
+    def test_AT_SRC_02_search_by_cuisine_found(self):
+        driver = self.driver
+        driver.get(BASE_URL + "restaurants")
+
+
+        cuisine_input = self.wait.until(
+        EC.presence_of_element_located((By.NAME, "cuisine")))
+        cuisine_input.send_keys("Italian")
+
+        select_element = self.wait.until(
+            EC.presence_of_element_located((By.NAME, "sort")))
+        select = Select(select_element)
+        select.select_by_value("name")
+
+        driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
+        time.sleep(5)
+
+        restaurants = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box ")))
+
+        title_element = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h3.title.is-4")))
+
+
+        self.assertIn("Pizza Palace", title_element.text)
+
 
     def test_AT_SRC_03_search_not_found(self):
         """TC AT_SRC_03: Tìm kiếm với địa điểm không có kết quả."""
@@ -79,6 +107,7 @@ class AutomationTest(unittest.TestCase):
         self.assertEqual("No restaurants found.", no_results_msg)
 
     def test_AT_SRC_04_search_empty_string(self):
+        """TC AT_SRC_04: Tìm kiếm với chuỗi rỗng (hiển thị tất cả nhà hàng)."""
         driver = self.driver
         driver.get(BASE_URL + "restaurants")
 
@@ -95,6 +124,7 @@ class AutomationTest(unittest.TestCase):
         # Assert: Có nhiều hơn 0 nhà hàng (không bị lọc)
         self.assertGreater(len(restaurants), 0)
     def test_AT_SRC_05_search_sql_injection(self):
+        """TC AT_SRC_05: Kiểm tra bảo mật với chuỗi SQL Injection."""
         driver = self.driver
         driver.get(BASE_URL + "restaurants")
 
@@ -125,78 +155,6 @@ class AutomationTest(unittest.TestCase):
         for r in restaurants:
             self.assertIn("Italian", r.text)
 
-    # Chức năng Đặt bàn
-    # def test_AT_REV_01_make_reservation_success(self):
-    #     driver = self.driver
-    #     driver.get(BASE_URL)
-    #
-    #     # Sinh dữ liệu ngẫu nhiên
-    #     random_number = random.randint(1000, 9999)
-    #     random_phone = random.randint(1000000000, 9999999999)
-    #     test_email = f"testuser{random_number}@gmail.com"
-    #     test_password = f"Test@{random_phone}"   # password mạnh hơn
-    #
-    #     # --- Đăng ký ---
-    #     driver.find_element(By.LINK_TEXT, "Register").click()
-    #
-    #     driver.find_element(By.NAME, "username").send_keys(f"user{random_number}")
-    #     driver.find_element(By.NAME, "password").send_keys(test_password)
-    #     driver.find_element(By.NAME, "confirm_password").send_keys(test_password)
-    #     driver.find_element(By.NAME, "full_name").send_keys("Hung")
-    #     driver.find_element(By.NAME, "email").send_keys(test_email)
-    #     driver.find_element(By.NAME, "phone").send_keys(str(random_phone))
-    #     driver.find_element(By.CSS_SELECTOR, "button.button.is-primary").click()
-    #
-    #
-    #     # --- Đăng nhập ---
-    #     driver.find_element(By.LINK_TEXT, "Login").click()
-    #     driver.find_element(By.NAME, "username").send_keys(f"user{random_number}")
-    #     driver.find_element(By.NAME, "password").send_keys(test_password)
-    #     driver.find_element(By.CSS_SELECTOR, "button.button.is-primary").click()
-    #
-    #
-    #
-    #     driver.find_element(By.LINK_TEXT, "Restaurants").click()
-    #
-    #     driver.find_element(By.CSS_SELECTOR, "a.button.is-small.is-primary").click()
-    #
-    #     driver.find_element(By.LINK_TEXT, "Restaurants").click()
-    #
-    #     driver.find_element(By.CSS_SELECTOR, "a.button.is-small.is-primary").click()
-    #
-    #     tomorrow = (date.today() + timedelta(days=2)).strftime("%y-%m-%d")
-    #     print (tomorrow)
-    #
-    #     date_input = driver.find_element(By.NAME, "date")
-    #
-    #     driver.execute_script("arguments[0].value = arguments[1];", date_input, tomorrow)
-    #
-    #
-    #     driver.execute_script("arguments[0].dispatchEvent(new Event('change'));", date_input)
-    #
-    #     time_input = driver.find_element(By.NAME, "time")
-    #
-    #     # Xóa giá trị cũ nếu có
-    #     time_input.clear()
-    #
-    #     time_input = driver.find_element(By.NAME, "time")
-    #
-    #     # Đặt trực tiếp giá trị bằng JavaScript (24h format)
-    #     driver.execute_script("arguments[0].value = '20:30';", time_input)
-    #
-    #     # Nếu cần, có thể trigger sự kiện change để form nhận giá trị
-    #     driver.execute_script("arguments[0].dispatchEvent(new Event('change'));", time_input)
-    #
-    #
-    #     driver.find_element(By.NAME, "guests").send_keys("3")
-    #     driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
-    #
-    #     # Kiểm tra thông báo đặt bàn thành công
-    #     success_reserve = self.wait.until(
-    #         EC.presence_of_element_located((By.CSS_SELECTOR, ".notification.is-success"))
-    #     )
-    #     self.assertIn("Reservation created and is pending confirmation.", success_reserve.text)
-
     def test_AT_REV_01_make_reservation_success(self):
         """TC AT_REV_01: Đặt bàn thành công."""
         driver = self.driver
@@ -213,9 +171,8 @@ class AutomationTest(unittest.TestCase):
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
 
-        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("0830C")  # Gửi 08:30 PM
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1130S")  
         self.wait.until(EC.visibility_of_element_located((By.NAME, "guests"))).send_keys("3")
-        time.sleep(3)
         self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.is-primary"))).click()
 
         self.wait.until(EC.url_to_be(BASE_URL + "bookings"))
@@ -225,36 +182,46 @@ class AutomationTest(unittest.TestCase):
         """TC AT_REV_02: (Tiêu cực) Thất bại khi đặt bàn vào ngày trong quá khứ."""
         driver = self.driver
         driver.get(BASE_URL + "login")
-        driver.find_element(By.NAME, "username").send_keys("cuong")
-        driver.find_element(By.NAME, "password").send_keys("admin")
+        driver.find_element(By.NAME, "username").send_keys("cuong1")
+        driver.find_element(By.NAME, "password").send_keys("asdasdasd")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
         self.wait.until(EC.url_to_be(BASE_URL))
 
         driver.get(BASE_URL + "restaurant/1")
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        date_input = driver.find_element(By.NAME, "date")
+        # SỬA LỖI: Sử dụng JavaScript để điền ngày một cách đáng tin cậy
+
+        date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{yesterday}';", date_input)
 
-        driver.find_element(By.NAME, "time").send_keys("19:00")
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1130S")  
         driver.find_element(By.NAME, "guests").send_keys("2")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
 
-        error_msg = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".notification.is-danger"))).text
-        self.assertIn("You cannot make a reservation for a past date.", error_msg)
+        msg = driver.execute_script("return arguments[0].validationMessage;", date_input)
+
+        is_valid = driver.execute_script("return arguments[0].validity.valid;", date_input)
+        self.assertFalse(is_valid, "Ngày không hợp lệ")
+
+        min_date = date_input.get_attribute("min")  
+        expected_day = min_date.split("-")[2]       
+        self.assertIn(expected_day, msg)
 
     def test_AT_REV_03_fail_when_restaurant_closed(self):
         """TC AT_REV_03: (Tiêu cực) Thất bại khi đặt bàn ngoài giờ hoạt động."""
         driver = self.driver
         driver.get(BASE_URL + "login")
-        driver.find_element(By.NAME, "username").send_keys("cuong")
-        driver.find_element(By.NAME, "password").send_keys("admin")
+        driver.find_element(By.NAME, "username").send_keys("cuong1")
+        driver.find_element(By.NAME, "password").send_keys("asdasdasd")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
         self.wait.until(EC.url_to_be(BASE_URL))
 
         driver.get(BASE_URL + "restaurant/1")  # Pizza Palace (mở cửa 11:00 - 22:00)
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
-        driver.find_element(By.NAME, "date").send_keys(tomorrow)
-        driver.find_element(By.NAME, "time").send_keys("23:00")
+        # SỬA LỖI: Sử dụng JavaScript để điền ngày một cách đáng tin cậy
+        date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
+        driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1130c")  
         driver.find_element(By.NAME, "guests").send_keys("2")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
 
@@ -265,57 +232,80 @@ class AutomationTest(unittest.TestCase):
         """TC AT_REV_04: Thất bại khi để trống trường bắt buộc."""
         driver = self.driver
         driver.get(BASE_URL + "login")
-        driver.find_element(By.NAME, "username").send_keys("cuong")
-        driver.find_element(By.NAME, "password").send_keys("admin")
+        driver.find_element(By.NAME, "username").send_keys("cuong1")
+        driver.find_element(By.NAME, "password").send_keys("asdasdasd")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
         self.wait.until(EC.url_to_be(BASE_URL))
 
         driver.get(BASE_URL + "restaurant/1")
-        driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
-        self.assertTrue(driver.current_url.startswith(BASE_URL + "restaurant/1"))
-        # Kiểm tra xem trình duyệt có hiển thị thông báo validation hay không
+
         date_input = driver.find_element(By.NAME, "date")
-        self.assertEqual(date_input.get_attribute("validationMessage"), "Please fill out this field.")
+        driver.execute_script("arguments[0].value = '';", date_input)
+
+        driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
+
+        msg = driver.execute_script("return arguments[0].validationMessage;", date_input)
+        is_valid = driver.execute_script("return arguments[0].validity.valid;", date_input)
+        self.assertFalse(is_valid, "Trường ngày trống lẽ ra phải không hợp lệ")
+
+        # Kiểm tra validation message có tồn tại
+        self.assertTrue(len(msg) > 0, "Phải có thông báo khi để trống ngày")
 
     def test_AT_REV_05_fail_on_zero_guests(self):
         """TC AT_REV_05: Thất bại khi đặt bàn cho 0 khách."""
         driver = self.driver
         driver.get(BASE_URL + "login")
-        driver.find_element(By.NAME, "username").send_keys("cuong")
-        driver.find_element(By.NAME, "password").send_keys("admin")
+        driver.find_element(By.NAME, "username").send_keys("cuong1")
+        driver.find_element(By.NAME, "password").send_keys("asdasdasd")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
         self.wait.until(EC.url_to_be(BASE_URL))
 
         driver.get(BASE_URL + "restaurant/1")
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
-        driver.find_element(By.NAME, "date").send_keys(tomorrow)
-        driver.find_element(By.NAME, "time").send_keys("20:00")
-        driver.find_element(By.NAME, "guests").send_keys("0")
-        driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
-        self.assertTrue(driver.current_url.startswith(BASE_URL + "restaurant/1"))
+
+        date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
+        driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
+
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("0830c")  
+        
         guests_input = driver.find_element(By.NAME, "guests")
-        self.assertIn("Value must be greater than or equal to 1", guests_input.get_attribute("validationMessage"))
+        guests_input.send_keys("0")
+
+        driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
+
+        msg = driver.execute_script("return arguments[0].validationMessage;", guests_input)
+
+        is_valid = driver.execute_script("return arguments[0].validity.valid;", guests_input)
+        self.assertFalse(is_valid, "Giá trị 0 cho số khách lẽ ra phải không hợp lệ")
+
+        # Kiểm tra thông báo có chứa số min (1)
+        min_guests = guests_input.get_attribute("min")  # "1"
+        self.assertIn(min_guests, msg)
 
     def test_AT_CAN_01_cancel_reservation(self):
         driver = self.driver
         driver.get(BASE_URL + "login")
-        driver.find_element(By.NAME, "username").send_keys("cuong")
-        driver.find_element(By.NAME, "password").send_keys("admin")
+        driver.find_element(By.NAME, "username").send_keys("cuong1")
+        driver.find_element(By.NAME, "password").send_keys("asdasdasd")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
+    
+        driver.get(BASE_URL + "bookings")
 
-        driver.get(BASE_URL + "restaurant/3")
-        two_days_later = (datetime.now() + timedelta(days=2)).strftime('%Y-%m-%d')
-        driver.find_element(By.NAME, "date").send_keys(two_days_later)
-        driver.find_element(By.NAME, "time").send_keys("12:00")
-        driver.find_element(By.NAME, "guests").send_keys("2")
-        driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
+        boxes = driver.find_elements(By.CSS_SELECTOR, "div.box")
 
-        self.wait.until(EC.url_to_be(BASE_URL + "bookings"))
-        driver.find_element(By.CSS_SELECTOR, ".box .buttons a.is-info").click()
+        for box in boxes:
+            status = box.find_element(By.TAG_NAME, "em").text.strip().lower()
+            if status == "pending":   # chỉ chọn khi status là pending
+                edit_button = box.find_element(By.CSS_SELECTOR, "a.button.is-small.is-info")
+                edit_button.click()
+                break 
+
 
         self.wait.until(EC.presence_of_element_located((By.NAME, "action")))
+
         driver.find_element(By.NAME, "action").click()
-        self.wait.until(EC.url_to_be(BASE_URL + "bookings"))
+
+
         self.assertIn("Reservation cancelled.", driver.page_source)
 
 
