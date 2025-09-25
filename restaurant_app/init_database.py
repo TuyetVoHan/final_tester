@@ -110,7 +110,10 @@ def init_db():
         # TÀI KHOẢN MẶC ĐỊNH
         cur.execute("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);",
                     ("cuong", generate_password_hash("admin"), "John Doe", "john@example.com", "123456789"))
-        
+
+        cur.execute("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);",
+                    ("cuong1", generate_password_hash("asdasdasd"), "John Doe", "abc@example.com", "123456780"))
+
         # *** BỔ SUNG: TẠO 400 TÀI KHOẢN ĐỂ KIỂM THỬ HIỆU NĂNG ***
         print("Creating 400 sample users for performance testing...")
         users_to_add = []
@@ -137,6 +140,7 @@ def init_db():
             ("Taco Temple", "Mexico City, Mexico", "Mexican", 4.9, "The most authentic tacos you will ever taste.", "11:30", "21:30"),
             ("Bangkok Spice", "Bangkok, Thailand", "Thai", 4.7, "Experience the true flavors of Thailand.", "10:30", "22:30"),
             ("Burger Hub", "Chicago, IL", "American", 4.4, "Gourmet burgers and craft beers.", "11:00", "23:00"),
+            ("Viet nam", "Ha Noi, HN", "Italian", 4.4, "Vietnam food", "11:00", "23:00"),
         ])
 
     cur.execute("SELECT COUNT(*) FROM Tables;")
