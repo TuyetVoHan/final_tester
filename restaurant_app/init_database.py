@@ -1,5 +1,6 @@
 import sqlite3
 from werkzeug.security import generate_password_hash
+import os
 
 # Đường dẫn tới file CSDL, đảm bảo nó giống với trong app.py
 DB_PATH = "restaurant_reservation.db"
@@ -106,17 +107,31 @@ def init_db():
 
     cur.execute("SELECT COUNT(*) FROM Customers;")
     if cur.fetchone()[0] == 0:
-        cur.executemany("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);", [
-            ("cuong", generate_password_hash("admin"), "John Doe", "john@example.com", "123456789"),
-        ])
-    
+        # TÀI KHOẢN MẶC ĐỊNH
+        cur.execute("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);",
+                    ("cuong", generate_password_hash("admin"), "John Doe", "john@example.com", "123456789"))
+        
+        # *** BỔ SUNG: TẠO 400 TÀI KHOẢN ĐỂ KIỂM THỬ HIỆU NĂNG ***
+        print("Creating 400 sample users for performance testing...")
+        users_to_add = []
+        for i in range(1, 401):
+            user = (
+                f"user{i}",
+                generate_password_hash("password123"), # Mật khẩu chung cho dễ nhớ
+                f"Test User {i}",
+                f"user{i}@example.com",
+                "1234567890"
+            )
+            users_to_add.append(user)
+        
+        cur.executemany("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);", users_to_add)
+        print("Finished creating sample users.")
+
     cur.execute("SELECT COUNT(*) FROM Restaurants;")
     if cur.fetchone()[0] == 0:
         cur.executemany("INSERT INTO Restaurants (name, location, cuisine, rating, description, opening_time, closing_time) VALUES (?, ?, ?, ?, ?, ?, ?);", [
-            # Dữ liệu cũ
             ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza.", "11:00", "22:00"),
             ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi.", "12:00", "23:00"),
-            # 5 nhà hàng mới
             ("The Golden Spoon", "Hanoi, Vietnam", "Vietnamese", 4.8, "Modern Vietnamese cuisine with a classic touch.", "10:00", "22:00"),
             ("Le Parisien Bistro", "Paris, France", "French", 4.6, "A cozy corner of Paris in your city.", "12:00", "23:00"),
             ("Taco Temple", "Mexico City, Mexico", "Mexican", 4.9, "The most authentic tacos you will ever taste.", "11:30", "21:30"),
@@ -126,26 +141,32 @@ def init_db():
 
     cur.execute("SELECT COUNT(*) FROM Tables;")
     if cur.fetchone()[0] == 0:
-        cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", [
-            # Dữ liệu cũ
-            (1, "T1", 2), (1, "T2", 4), (1, "T3", 6),
+        # Dữ liệu bàn cho các nhà hàng khác
+        other_tables = [
             (2, "T1", 2), (2, "T2", 4), (2, "T3", 6),
-            # Dữ liệu 25 bàn mới
-            (3, "V1", 2), (3, "V2", 2), (3, "V3", 4), (3, "V4", 6), (3, "V5", 8),
-            (4, "P1", 2), (4, "P2", 2), (4, "P3", 4), (4, "P4", 4), (4, "P5", 6),
-            (5, "M1", 4), (5, "M2", 4), (5, "M3", 6), (5, "M4", 6), (5, "M5", 10),
-            (6, "B1", 2), (6, "B2", 4), (6, "B3", 4), (6, "B4", 5), (6, "B5", 7),
-            (7, "H1", 2), (7, "H2", 3), (7, "H3", 4), (7, "H4", 6), (7, "H5", 6),
-        ])
+            (3, "V1", 2), (3, "V2", 2), (3, "V3", 4),
+        ]
+        cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", other_tables)
+        
+        # *** BỔ SUNG: THÊM 400 BÀN CHO NHÀ HÀNG PIZZA PALACE (ID=1) ***
+        print("Adding 400 tables to Pizza Palace for performance testing...")
+        pizza_palace_tables = []
+        for i in range(1, 401):
+            # Thêm đa dạng các loại bàn 2, 4, 6 chỗ
+            capacity = (i % 3) * 2 + 2 
+            pizza_palace_tables.append((1, f"P{i}", capacity))
+        
+        cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", pizza_palace_tables)
+        print("Finished adding tables.")
 
     db.commit()
     db.close()
 
 if __name__ == '__main__':
     # Xóa file database cũ nếu có để tạo lại từ đầu
-    import os
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
         print(f"Removed old database file: {DB_PATH}")
     
     init_db()
+    print("Database has been initialized with sample data.")
