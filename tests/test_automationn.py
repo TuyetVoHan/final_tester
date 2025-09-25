@@ -171,7 +171,7 @@ class AutomationTest(unittest.TestCase):
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
 
-        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1130S")  
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("0800C")  
         self.wait.until(EC.visibility_of_element_located((By.NAME, "guests"))).send_keys("3")
         self.wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.is-primary"))).click()
 
@@ -194,7 +194,7 @@ class AutomationTest(unittest.TestCase):
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{yesterday}';", date_input)
 
-        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1130S")  
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("0800C")  
         driver.find_element(By.NAME, "guests").send_keys("2")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
 
@@ -221,7 +221,7 @@ class AutomationTest(unittest.TestCase):
         # SỬA LỖI: Sử dụng JavaScript để điền ngày một cách đáng tin cậy
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
-        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1130c")  
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1100C")  
         driver.find_element(By.NAME, "guests").send_keys("2")
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
 
@@ -266,7 +266,7 @@ class AutomationTest(unittest.TestCase):
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
 
-        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("0830c")  
+        self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("0800C")  
         
         guests_input = driver.find_element(By.NAME, "guests")
         guests_input.send_keys("0")
