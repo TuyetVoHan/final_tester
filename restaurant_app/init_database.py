@@ -115,26 +115,26 @@ def init_db():
                     ("cuong1", generate_password_hash("asdasdasd"), "John Doe", "abc@example.com", "123456780"))
 
         # *** BỔ SUNG: TẠO 400 TÀI KHOẢN ĐỂ KIỂM THỬ HIỆU NĂNG ***
-        print("Creating 400 sample users for performance testing...")
-        users_to_add = []
-        for i in range(1, 401):
-            user = (
-                f"user{i}",
-                generate_password_hash("password123"), # Mật khẩu chung cho dễ nhớ
-                f"Test User {i}",
-                f"user{i}@example.com",
-                "1234567890"
-            )
-            users_to_add.append(user)
-        
-        cur.executemany("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);", users_to_add)
-        print("Finished creating sample users.")
+        # print("Creating 400 sample users for performance testing...")
+        # users_to_add = []
+        # for i in range(1, 401):
+        #     user = (
+        #         f"user{i}",
+        #         generate_password_hash("password123"), # Mật khẩu chung cho dễ nhớ
+        #         f"Test User {i}",
+        #         f"user{i}@example.com",
+        #         "1234567890"
+        #     )
+        #     users_to_add.append(user)
+        #
+        # cur.executemany("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);", users_to_add)
+        # print("Finished creating sample users.")
 
     cur.execute("SELECT COUNT(*) FROM Restaurants;")
     if cur.fetchone()[0] == 0:
         cur.executemany("INSERT INTO Restaurants (name, location, cuisine, rating, description, opening_time, closing_time) VALUES (?, ?, ?, ?, ?, ?, ?);", [
             ("Pizza Palace", "New York, NY", "Italian", 4.5, "Authentic Italian pizza.", "11:00", "22:00"),
-            ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi.", "12:00", "23:00"),
+            ("Sushi World", "Los Angeles, CA", "Japanese", 4.7, "Fresh sushi and sashimi.", "11:00", "23:00"),
             ("The Golden Spoon", "Hanoi, Vietnam", "Vietnamese", 4.8, "Modern Vietnamese cuisine with a classic touch.", "10:00", "22:00"),
             ("Le Parisien Bistro", "Paris, France", "French", 4.6, "A cozy corner of Paris in your city.", "12:00", "23:00"),
             ("Taco Temple", "Mexico City, Mexico", "Mexican", 4.9, "The most authentic tacos you will ever taste.", "11:30", "21:30"),
@@ -148,20 +148,20 @@ def init_db():
         # Dữ liệu bàn cho các nhà hàng khác
         other_tables = [
             (2, "T1", 2), (2, "T2", 4), (2, "T3", 6),
-            (3, "V1", 2), (3, "V2", 2), (3, "V3", 4),
+            (1, "V1", 2), (1, "V2", 6), (1, "V3", 4),(3, "H1" ,4),
         ]
         cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", other_tables)
         
         # *** BỔ SUNG: THÊM 400 BÀN CHO NHÀ HÀNG PIZZA PALACE (ID=1) ***
-        print("Adding 400 tables to Pizza Palace for performance testing...")
-        pizza_palace_tables = []
-        for i in range(1, 401):
-            # Thêm đa dạng các loại bàn 2, 4, 6 chỗ
-            capacity = (i % 3) * 2 + 2 
-            pizza_palace_tables.append((1, f"P{i}", capacity))
-        
-        cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", pizza_palace_tables)
-        print("Finished adding tables.")
+        # print("Adding 400 tables to Pizza Palace for performance testing...")
+        # pizza_palace_tables = []
+        # for i in range(1, 401):
+        #     # Thêm đa dạng các loại bàn 2, 4, 6 chỗ
+        #     capacity = (i % 3) * 2 + 2
+        #     pizza_palace_tables.append((1, f"P{i}", capacity))
+        #
+        # cur.executemany("INSERT INTO Tables (restaurant_id, table_number, capacity) VALUES (?, ?, ?);", pizza_palace_tables)
+        # print("Finished adding tables.")
 
     db.commit()
     db.close()
