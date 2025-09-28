@@ -77,14 +77,14 @@ def register():
             flash('Invalid email address.', 'danger')
             error = True
         
-        # --- THÊM VALIDATE CHO SỐ ĐIỆN THOẠI ---
+        
         if phone and not re.match(r"^\d{10}$", phone):
             flash('Invalid phone number. It must be 10 digits.', 'danger')
             error = True
-        # --- KẾT THÚC VALIDATE SỐ ĐIỆN THOẠI ---
+
 
         if error:
-            # Nếu có lỗi, render lại trang register và giữ lại dữ liệu người dùng đã nhập
+         
             return render_template('register.html',
                                    username=username,
                                    full_name=full_name,
@@ -471,16 +471,16 @@ def admin_restaurant_form(rid=None):
         cuisine = request.form['cuisine']
         rating = float(request.form.get('rating') or 0)
         description = request.form.get('description', '')
-        opening_time = request.form.get('opening_time') # THÊM DÒNG NÀY
-        closing_time = request.form.get('closing_time') # THÊM DÒNG NÀY
+        opening_time = request.form.get('opening_time') 
+        closing_time = request.form.get('closing_time') 
 
         if rid:
             db.execute("UPDATE Restaurants SET name=?, location=?, cuisine=?, rating=?, description=?, opening_time=?, closing_time=? WHERE restaurant_id=?",
-                       (name, location, cuisine, rating, description, opening_time, closing_time, rid)) # CẬP NHẬT CÂU LỆNH
+                       (name, location, cuisine, rating, description, opening_time, closing_time, rid)) 
             flash('Restaurant updated.', 'success')
         else:
             cur = db.execute("INSERT INTO Restaurants (name, location, cuisine, rating, description, opening_time, closing_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (name, location, cuisine, rating, description, opening_time, closing_time)) # CẬP NHẬT CÂU LỆNH
+                        (name, location, cuisine, rating, description, opening_time, closing_time)) 
             rid = cur.lastrowid
             flash('Restaurant added.', 'success')
         db.commit()
@@ -585,8 +585,7 @@ def admin_edit_user(uid):
 @login_required(role='admin')
 def admin_delete_user(uid):
     db = get_db()
-    # Optional: Check if the user is not deleting themselves, although admin accounts are separate.
-    # This is a good practice.
+
     db.execute("DELETE FROM Customers WHERE customer_id = ?", (uid,))
     db.commit()
     flash('User account has been deleted.', 'info')

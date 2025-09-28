@@ -109,7 +109,7 @@ def init_db():
     if cur.fetchone()[0] == 0:
         # TÀI KHOẢN MẶC ĐỊNH
         cur.execute("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);",
-                    ("cuong", generate_password_hash("admin"), "John Doe", "john@example.com", "123456789"))
+                    ("cuong", generate_password_hash("admin"), "cuong", "john@example.com", "123456789"))
 
         cur.execute("INSERT INTO Customers (username, password_hash, full_name, email, phone) VALUES (?, ?, ?, ?, ?);",
                     ("cuong1", generate_password_hash("asdasdasd"), "John Doe", "abc@example.com", "123456780"))

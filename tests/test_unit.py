@@ -4,10 +4,9 @@ from datetime import datetime, timedelta
 import sys
 import os
 
-# Thêm thư mục gốc của dự án vào Python Path để có thể import từ restaurant_app
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import các hàm và đối tượng cần thiết
+# các hàm và đối tượng cần thiết
 from restaurant_app.app import app, is_reservation_date_valid, is_reservation_time_valid, find_available_table
 
 
@@ -19,7 +18,7 @@ class TestDateTimeValidation(unittest.TestCase):
 
     def setUp(self):
         self.restaurant = {'opening_time': '10:00', 'closing_time': '22:00'}
-        # Giả sử hôm nay là 2025-09-20 để khớp với tài liệu
+        # Giả sử hôm nay là 2025-09-20
         self.mock_today = datetime(2025, 9, 20)
 
     def test_UT_DT_01_valid_future_date(self):

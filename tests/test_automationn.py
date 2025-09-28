@@ -28,7 +28,6 @@ class AutomationTest(unittest.TestCase):
         """Đóng trình duyệt sau khi mỗi bài test hoàn thành."""
         self.driver.quit()
 
-    # Chức năng Đăng nhập
     def test_AT_LGN_01_valid_login(self):
         driver = self.driver
         driver.get(BASE_URL + "login")
@@ -56,21 +55,19 @@ class AutomationTest(unittest.TestCase):
         driver.find_element(By.CSS_SELECTOR, "button.is-primary").click()
         error_msg = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".notification.is-danger"))).text
         self.assertIn("Invalid username or password.", error_msg)
-    # search
+
     def test_AT_SRC_01_search_by_location_found(self):
         """TC AT_SRC_01: Tìm kiếm với địa điểm có kết quả thành công."""
         driver = self.driver
         driver.get(BASE_URL + "restaurants")
         driver.find_element(By.NAME, "location").send_keys("Hanoi")
         driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
-        time.sleep(5) 
         restaurants = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box ")))
 
         self.assertEqual(len(restaurants), 1)
 
         self.assertIn("The Golden Spoon", restaurants[0].text)
 
-    
     def test_AT_SRC_02_search_by_cuisine_found(self):
         driver = self.driver
         driver.get(BASE_URL + "restaurants")
@@ -86,7 +83,6 @@ class AutomationTest(unittest.TestCase):
         select.select_by_value("name")
 
         driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
-        time.sleep(5)
 
         restaurants = self.wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".box ")))
 
@@ -94,7 +90,6 @@ class AutomationTest(unittest.TestCase):
 
 
         self.assertIn("Pizza Palace", title_element.text)
-
 
     def test_AT_SRC_03_search_not_found(self):
         """TC AT_SRC_03: Tìm kiếm với địa điểm không có kết quả."""
@@ -107,6 +102,7 @@ class AutomationTest(unittest.TestCase):
         self.assertEqual("No restaurants found.", no_results_msg)
 
     def test_AT_SRC_04_search_empty_string(self):
+
         """TC AT_SRC_04: Tìm kiếm với chuỗi rỗng (hiển thị tất cả nhà hàng)."""
         driver = self.driver
         driver.get(BASE_URL + "restaurants")
@@ -123,6 +119,7 @@ class AutomationTest(unittest.TestCase):
 
         # Assert: Có nhiều hơn 0 nhà hàng (không bị lọc)
         self.assertGreater(len(restaurants), 0)
+        
     def test_AT_SRC_05_search_sql_injection(self):
         """TC AT_SRC_05: Kiểm tra bảo mật với chuỗi SQL Injection."""
         driver = self.driver
@@ -133,10 +130,8 @@ class AutomationTest(unittest.TestCase):
         driver.find_element(By.CSS_SELECTOR, "button.is-info").click()
         time.sleep(2)
 
-        # Kiểm tra kết quả (không bị lỗi, không hiển thị tất cả nhà hàng)
         restaurants = driver.find_elements(By.CSS_SELECTOR, ".box h3.is-4")
 
-        # Có thể là 0 hoặc rất ít, nhưng không được crash
         self.assertTrue(len(restaurants) == 0 )
 
     def test_AT_SRC_06_search_multiple_filters(self):
@@ -167,7 +162,6 @@ class AutomationTest(unittest.TestCase):
         driver.get(BASE_URL + "restaurant/1")
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
 
-        # SỬA LỖI: Sử dụng JavaScript để điền ngày một cách đáng tin cậy
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
 
@@ -189,7 +183,6 @@ class AutomationTest(unittest.TestCase):
 
         driver.get(BASE_URL + "restaurant/1")
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
-        # SỬA LỖI: Sử dụng JavaScript để điền ngày một cách đáng tin cậy
 
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{yesterday}';", date_input)
@@ -201,7 +194,7 @@ class AutomationTest(unittest.TestCase):
         msg = driver.execute_script("return arguments[0].validationMessage;", date_input)
 
         is_valid = driver.execute_script("return arguments[0].validity.valid;", date_input)
-        self.assertFalse(is_valid, "Ngày không hợp lệ")
+        self.assertFalse(is_valid)
 
         min_date = date_input.get_attribute("min")  
         expected_day = min_date.split("-")[2]       
@@ -218,7 +211,6 @@ class AutomationTest(unittest.TestCase):
 
         driver.get(BASE_URL + "restaurant/1")  # Pizza Palace (mở cửa 11:00 - 22:00)
         tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
-        # SỬA LỖI: Sử dụng JavaScript để điền ngày một cách đáng tin cậy
         date_input = self.wait.until(EC.visibility_of_element_located((By.NAME, "date")))
         driver.execute_script(f"arguments[0].value = '{tomorrow}';", date_input)
         self.wait.until(EC.visibility_of_element_located((By.NAME, "time"))).send_keys("1100C")  
@@ -246,10 +238,10 @@ class AutomationTest(unittest.TestCase):
 
         msg = driver.execute_script("return arguments[0].validationMessage;", date_input)
         is_valid = driver.execute_script("return arguments[0].validity.valid;", date_input)
-        self.assertFalse(is_valid, "Trường ngày trống lẽ ra phải không hợp lệ")
+        self.assertFalse(is_valid)
 
         # Kiểm tra validation message có tồn tại
-        self.assertTrue(len(msg) > 0, "Phải có thông báo khi để trống ngày")
+        self.assertTrue(len(msg) > 0)
 
     def test_AT_REV_05_fail_on_zero_guests(self):
         """TC AT_REV_05: Thất bại khi đặt bàn cho 0 khách."""
@@ -276,7 +268,7 @@ class AutomationTest(unittest.TestCase):
         msg = driver.execute_script("return arguments[0].validationMessage;", guests_input)
 
         is_valid = driver.execute_script("return arguments[0].validity.valid;", guests_input)
-        self.assertFalse(is_valid, "Giá trị 0 cho số khách lẽ ra phải không hợp lệ")
+        self.assertFalse(is_valid)
 
         # Kiểm tra thông báo có chứa số min (1)
         min_guests = guests_input.get_attribute("min")  # "1"
@@ -295,7 +287,7 @@ class AutomationTest(unittest.TestCase):
 
         for box in boxes:
             status = box.find_element(By.TAG_NAME, "em").text.strip().lower()
-            if status == "pending":   # chỉ chọn khi status là pending
+            if status == "pending":   #chọn khi status là pending
                 edit_button = box.find_element(By.CSS_SELECTOR, "a.button.is-small.is-info")
                 edit_button.click()
                 break 

@@ -10,7 +10,6 @@ from restaurant_app.app import app
 from restaurant_app.init_database import init_db, DB_PATH
 
 
-# --- Lớp kiểm thử cho Luồng chức năng Khách hàng (Bảng 7) ---
 class CustomerFlowIntegrationTest(unittest.TestCase):
     def setUp(self):
         app.config['TESTING'] = True
@@ -44,13 +43,11 @@ class CustomerFlowIntegrationTest(unittest.TestCase):
         response = self.client.post('/restaurant/1', data={'date': tomorrow, 'time': '19:00', 'guests': '2'},
                                     follow_redirects=True)
         self.assertIn(b'Please login as a customer', response.data)
-        # SỬA LỖI: Tìm chuỗi HTML chính xác hơn
         self.assertIn(b'<h2 class="title">Login</h2>', response.data)
 
     def test_IT_FLOW_03_edit_reservation_fails_no_table(self):
         """TC IT_FLOW_03: Luồng thất bại - Sửa đặt bàn nhưng không còn bàn trống phù hợp."""
         self.client.post('/login', data={'who': 'customer', 'username': 'cuong', 'password': 'admin'})
-        # SỬA LỖI: Logic chiếm bàn đã được sửa lại cho đúng
         # Đặt bàn T3 (6 chỗ)
         self.client.post('/restaurant/1', data={'date': '2025-11-10', 'time': '20:00', 'guests': '6'})  # res_id=1
         # Đặt bàn T2 (4 chỗ)
@@ -58,13 +55,12 @@ class CustomerFlowIntegrationTest(unittest.TestCase):
         # Đặt bàn T1 (2 chỗ)
         self.client.post('/restaurant/1', data={'date': '2025-11-10', 'time': '20:00', 'guests': '2'})  # res_id=3
 
-        # Bây giờ, cố gắng sửa lượt đặt res_id=3 từ 2 khách lên 3 khách. Sẽ không còn bàn nào trống để chứa.
+        # đặt res_id=3 từ 2 khách lên 3 khách. Sẽ không còn bàn nào trống để chứa.
         response = self.client.post('/reservation/3/edit', data={'date': '2025-11-10', 'time': '20:00', 'guests': '3'},
                                     follow_redirects=True)
         self.assertIn(b'No available table for updated time/party size.', response.data)
 
 
-# --- Lớp kiểm thử cho Tích hợp Bàn trống (Bảng 8) ---
 class AvailabilityIntegrationTest(unittest.TestCase):
     def setUp(self):
         app.config['TESTING'] = True
@@ -78,7 +74,7 @@ class AvailabilityIntegrationTest(unittest.TestCase):
     def test_IT_AVAIL_01_booking_conflict(self):
         """TC IT_AVAIL_01: User 1 đặt thành công, User 2 đặt trùng giờ thất bại."""
         self.client.post('/login', data={'who': 'customer', 'username': 'cuong', 'password': 'admin'})
-        # SỬA LỖI: User 1 đặt hết tất cả các bàn tại nhà hàng Sushi World (id=2)
+        # User 1 đặt hết tất cả các bàn tại nhà hàng Sushi World (id=2)
         self.client.post('/restaurant/2', data={'date': '2025-11-11', 'time': '19:30', 'guests': '2'}) # Đặt bàn T1
         self.client.post('/restaurant/2', data={'date': '2025-11-11', 'time': '19:30', 'guests': '4'}) # Đặt bàn T2
         self.client.post('/restaurant/2', data={'date': '2025-11-11', 'time': '19:30', 'guests': '6'}) # Đặt bàn T3
@@ -101,8 +97,6 @@ class AvailabilityIntegrationTest(unittest.TestCase):
         response = self.client.post('/restaurant/2', data={'date': '2025-11-12', 'time': '20:00', 'guests': '2'}, follow_redirects=True)
         self.assertIn(b'Reservation created', response.data)
 
-
-# --- Lớp kiểm thử cho Tích hợp Admin-Customer (Bảng 9) ---
 class AdminCustomerSyncIntegrationTest(unittest.TestCase):
     def setUp(self):
         app.config['TESTING'] = True

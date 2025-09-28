@@ -3,7 +3,6 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-# Thêm thư mục gốc của dự án vào Python Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from restaurant_app.app import app
@@ -11,10 +10,6 @@ from restaurant_app.init_database import init_db, DB_PATH
 
 
 class UserComponentTest(unittest.TestCase):
-    """
-    Kiểm tra Thành phần Người dùng (Yêu cầu 3.2.1)
-    Tương ứng các TC ID: CT_USR_01 -> CT_USR_06
-    """
 
     def setUp(self):
         """Thiết lập môi trường test cho mỗi lần chạy."""
@@ -95,12 +90,7 @@ class UserComponentTest(unittest.TestCase):
         self.assertIn(b'Profile updated.', response.data)
         self.assertIn(b'Updated Name', response.data)
 
-
 class RestaurantComponentTest(unittest.TestCase):
-    """
-    Kiểm tra Thành phần Nhà hàng (Yêu cầu 3.2.2)
-    Tương ứng các TC ID: CT_RES_01 -> CT_RES_03
-    """
 
     def setUp(self):
         app.config['TESTING'] = True
@@ -143,12 +133,7 @@ class RestaurantComponentTest(unittest.TestCase):
         self.assertIn(b'Restaurant deleted.', response.data)
         self.assertNotIn(b'Pizza Palace', response.data)
 
-
 class ReservationComponentTest(unittest.TestCase):
-    """
-    Kiểm tra Thành phần Đặt bàn (Yêu cầu 3.2.3)
-    Tương ứng các TC ID: CT_REV_01 -> CT_REV_04
-    """
 
     def setUp(self):
         app.config['TESTING'] = True
